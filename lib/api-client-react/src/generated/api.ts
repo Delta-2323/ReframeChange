@@ -17,6 +17,8 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AiSummaryInput,
+  AiSummaryResponse,
   DashboardStats,
   GenerateMessageInput,
   GetMessages200,
@@ -1029,6 +1031,92 @@ export const useUpdateMessage = <
   TContext
 > => {
   return useMutation(getUpdateMessageMutationOptions(options));
+};
+
+/**
+ * @summary Generate an AI summary of the stakeholder landscape
+ */
+export const getGenerateAiSummaryUrl = () => {
+  return `/api/dashboard/ai-summary`;
+};
+
+export const generateAiSummary = async (
+  aiSummaryInput?: AiSummaryInput,
+  options?: RequestInit,
+): Promise<AiSummaryResponse> => {
+  return customFetch<AiSummaryResponse>(getGenerateAiSummaryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aiSummaryInput),
+  });
+};
+
+export const getGenerateAiSummaryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateAiSummary>>,
+    TError,
+    { data: BodyType<AiSummaryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateAiSummary>>,
+  TError,
+  { data: BodyType<AiSummaryInput> },
+  TContext
+> => {
+  const mutationKey = ["generateAiSummary"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateAiSummary>>,
+    { data: BodyType<AiSummaryInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateAiSummary(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateAiSummaryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateAiSummary>>
+>;
+export type GenerateAiSummaryMutationBody = BodyType<AiSummaryInput>;
+export type GenerateAiSummaryMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate an AI summary of the stakeholder landscape
+ */
+export const useGenerateAiSummary = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateAiSummary>>,
+    TError,
+    { data: BodyType<AiSummaryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateAiSummary>>,
+  TError,
+  { data: BodyType<AiSummaryInput> },
+  TContext
+> => {
+  return useMutation(getGenerateAiSummaryMutationOptions(options));
 };
 
 /**

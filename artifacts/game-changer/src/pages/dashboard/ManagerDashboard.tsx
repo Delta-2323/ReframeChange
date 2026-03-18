@@ -3,7 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 import { 
-  Users, Briefcase, FileText, CheckCircle, Plus, Edit, Send, Loader2, Sparkles, MessageSquare, LogOut
+  Users, Briefcase, FileText, CheckCircle, Plus, Edit, Send, Loader2, Sparkles, MessageSquare, LogOut,
+  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -12,7 +13,8 @@ import { ManagerAuth } from "./ManagerAuth";
 import { useManagerAuth } from "@/hooks/use-manager-auth";
 import { 
   useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, 
-  useCreateProject, useGenerateMessage, getGetMessagesQueryKey, getGetDashboardStatsQueryKey, getGetProjectsQueryKey 
+  useCreateProject, useGenerateMessage, useGenerateAiSummary,
+  getGetMessagesQueryKey, getGetDashboardStatsQueryKey, getGetProjectsQueryKey 
 } from "@workspace/api-client-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,169 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+type AiSummaryData = {
+  summary: string;
+  keyInsights: string[];
+  recommendations: string[];
+  riskFlags: string[];
+  generatedAt: string;
+};
+
+function AiSummaryCard() {
+  const [summaryData, setSummaryData] = useState<AiSummaryData | null>(null);
+  const generateSummary = useGenerateAiSummary();
+
+  const handleGenerate = async () => {
+    try {
+      const result = await generateSummary.mutateAsync({ data: {} });
+      setSummaryData(result as AiSummaryData);
+    } catch {
+      // error handled by toast below
+    }
+  };
+
+  if (!summaryData && !generateSummary.isPending) {
+    return (
+      <Card className="shadow-sm border-border/50 bg-gradient-to-br from-primary/5 via-background to-teal-500/5">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <Brain className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">AI Landscape Summary</CardTitle>
+                <CardDescription>Get an intelligent analysis of your stakeholder change readiness</CardDescription>
+              </div>
+            </div>
+            <Button onClick={handleGenerate} className="bg-primary shadow-lg shadow-primary/20 gap-2">
+              <Sparkles className="h-4 w-4" />
+              Generate Summary
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid sm:grid-cols-3 gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 bg-muted/40 rounded-lg px-3 py-2">
+              <TrendingUp className="h-4 w-4 text-teal-600 shrink-0" />
+              <span>Readiness insights</span>
+            </div>
+            <div className="flex items-center gap-2 bg-muted/40 rounded-lg px-3 py-2">
+              <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
+              <span>Actionable recommendations</span>
+            </div>
+            <div className="flex items-center gap-2 bg-muted/40 rounded-lg px-3 py-2">
+              <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />
+              <span>Risk flags</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (generateSummary.isPending) {
+    return (
+      <Card className="shadow-sm border-border/50">
+        <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
+          <div className="relative">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <Brain className="h-7 w-7 text-primary" />
+            </div>
+            <Loader2 className="h-5 w-5 animate-spin text-primary absolute -bottom-1 -right-1" />
+          </div>
+          <div className="text-center">
+            <p className="font-semibold text-foreground">Analysing stakeholder landscape…</p>
+            <p className="text-sm text-muted-foreground mt-1">Your AI is reviewing mental models and generating insights</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!summaryData) return null;
+
+  return (
+    <Card className="shadow-sm border-border/50">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-primary/10">
+              <Brain className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">AI Landscape Summary</CardTitle>
+              <CardDescription>Generated {format(new Date(summaryData.generatedAt), "MMM d, yyyy 'at' h:mm a")}</CardDescription>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleGenerate} className="gap-2 text-muted-foreground">
+            <RefreshCw className="h-4 w-4" />
+            Regenerate
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Executive Summary */}
+        <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+          <p className="text-sm text-foreground leading-relaxed">{summaryData.summary}</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-5">
+          {/* Key Insights */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-teal-600" />
+              <h4 className="font-semibold text-sm text-foreground">Key Insights</h4>
+            </div>
+            <ul className="space-y-2">
+              {summaryData.keyInsights.map((insight, i) => (
+                <li key={i} className="flex gap-2.5 text-sm text-muted-foreground leading-relaxed">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-teal-500 shrink-0" />
+                  {insight}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Recommendations */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-amber-500" />
+              <h4 className="font-semibold text-sm text-foreground">Recommendations</h4>
+            </div>
+            <ul className="space-y-2">
+              {summaryData.recommendations.map((rec, i) => (
+                <li key={i} className="flex gap-2.5 text-sm text-muted-foreground leading-relaxed">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
+                  {rec}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Risk Flags */}
+        {summaryData.riskFlags.length > 0 && (
+          <div className="rounded-xl bg-rose-50 border border-rose-100 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-rose-500" />
+              <h4 className="font-semibold text-sm text-rose-700">Risk Flags</h4>
+            </div>
+            <ul className="space-y-2">
+              {summaryData.riskFlags.map((flag, i) => (
+                <li key={i} className="flex gap-2.5 text-sm text-rose-600 leading-relaxed">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-rose-400 shrink-0" />
+                  {flag}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // Sub-components for Tabs to keep file structured
 function OverviewTab() {
@@ -82,6 +247,9 @@ function OverviewTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Summary Card */}
+      <AiSummaryCard />
 
       <Card className="shadow-sm border-border/50">
         <CardHeader>

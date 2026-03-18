@@ -246,6 +246,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /dashboard/ai-summary:
+    post:
+      operationId: generateAiSummary
+      tags: [dashboard]
+      summary: Generate an AI summary of the stakeholder landscape
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiSummaryInput"
+      responses:
+        "200":
+          description: AI summary generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSummaryResponse"
+
   /dashboard/stats:
     get:
       operationId: getDashboardStats
@@ -418,6 +437,35 @@ components:
         count:
           type: integer
       required: [mentalModel, count]
+
+    AiSummaryInput:
+      type: object
+      properties:
+        projectId:
+          type: integer
+          nullable: true
+
+    AiSummaryResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+        keyInsights:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        riskFlags:
+          type: array
+          items:
+            type: string
+        generatedAt:
+          type: string
+          format: date-time
+      required: [summary, keyInsights, recommendations, riskFlags, generatedAt]
 
     DashboardStats:
       type: object

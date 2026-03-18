@@ -213,6 +213,21 @@ export const UpdateMessageResponse = zod.object({
 });
 
 /**
+ * @summary Generate an AI summary of the stakeholder landscape
+ */
+export const GenerateAiSummaryBody = zod.object({
+  projectId: zod.number().nullish(),
+});
+
+export const GenerateAiSummaryResponse = zod.object({
+  summary: zod.string(),
+  keyInsights: zod.array(zod.string()),
+  recommendations: zod.array(zod.string()),
+  riskFlags: zod.array(zod.string()),
+  generatedAt: zod.date(),
+});
+
+/**
  * @summary Get dashboard statistics including mental model distribution
  */
 export const GetDashboardStatsResponse = zod.object({

@@ -113,6 +113,18 @@ export interface MentalModelCount {
   count: number;
 }
 
+export interface AiSummaryInput {
+  projectId?: number | null;
+}
+
+export interface AiSummaryResponse {
+  summary: string;
+  keyInsights: string[];
+  recommendations: string[];
+  riskFlags: string[];
+  generatedAt: string;
+}
+
 export interface DashboardStats {
   totalSurveys: number;
   totalProjects: number;
