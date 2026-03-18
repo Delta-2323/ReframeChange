@@ -1,0 +1,20 @@
+packages:
+  "framer-motion": "For page transitions and smooth UI animations"
+  "recharts": "For the dashboard mental model distribution bar chart"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "For integrating Zod validation with forms"
+  "zod": "Schema validation for forms"
+  "date-fns": "For human-readable date formatting"
+
+images:
+  - path: "artifacts/game-changer/public/images/hero-bg.png"
+    description: "Abstract fluid gradient background in deep navy blue, rich teal, and soft cyan with subtle glassmorphism geometric shapes floating. Very clean, premium enterprise tech feel."
+    aspect_ratio: "16:9"
+  - path: "artifacts/game-changer/public/images/logo-icon.png"
+    description: "A minimal, modern geometric logo icon featuring an abstract 'G' and 'C' interlocking in bright teal and navy colors. Transparent background, crisp vector style."
+    aspect_ratio: "1:1"
+
+notes:
+  - Using generated API hooks from @workspace/api-client-react
+  - Manager authentication uses a client-side PIN ('manager123') as requested
+  - Utilizing shadcn/ui components already available in the workspace

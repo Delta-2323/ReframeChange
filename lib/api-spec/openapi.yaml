@@ -1,22 +1,28 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Game Changer REM16 Framework API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: surveys
+    description: Stakeholder survey operations
+  - name: projects
+    description: Project context management
+  - name: messages
+    description: AI-generated message management
+  - name: dashboard
+    description: Dashboard and analytics
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +30,235 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /surveys:
+    post:
+      operationId: submitSurvey
+      tags: [surveys]
+      summary: Submit a stakeholder survey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SurveyInput"
+      responses:
+        "201":
+          description: Survey submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SurveyResponse"
+    get:
+      operationId: getSurveys
+      tags: [surveys]
+      summary: Get all survey responses
+      responses:
+        "200":
+          description: List of surveys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  surveys:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SurveyResponse"
+                required: [surveys]
+
+  /surveys/{id}:
+    get:
+      operationId: getSurvey
+      tags: [surveys]
+      summary: Get a single survey
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Survey found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SurveyResponse"
+        "404":
+          description: Not found
+
+  /projects:
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a project with context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+    get:
+      operationId: getProjects
+      tags: [projects]
+      summary: Get all projects
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProjectResponse"
+                required: [projects]
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "404":
+          description: Not found
+    put:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "200":
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+
+  /messages:
+    post:
+      operationId: generateMessage
+      tags: [messages]
+      summary: Generate an AI message for a stakeholder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateMessageInput"
+      responses:
+        "201":
+          description: Message generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+    get:
+      operationId: getMessages
+      tags: [messages]
+      summary: Get all messages
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MessageResponse"
+                required: [messages]
+
+  /messages/{id}:
+    get:
+      operationId: getMessage
+      tags: [messages]
+      summary: Get a single message
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Message found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+    put:
+      operationId: updateMessage
+      tags: [messages]
+      summary: Update (edit/approve) a message
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMessageInput"
+      responses:
+        "200":
+          description: Message updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get dashboard statistics including mental model distribution
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +266,172 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    SurveyInput:
+      type: object
+      properties:
+        stakeholderName:
+          type: string
+        role:
+          type: string
+        thinkingFocus:
+          type: string
+          enum: [Proof, Process, People, Possibility]
+        orientation:
+          type: string
+          enum: [Eager, Cautious]
+        changeRole:
+          type: string
+          enum: [Rockstar, Roadie]
+        projectId:
+          type: integer
+          nullable: true
+      required: [stakeholderName, role, thinkingFocus, orientation, changeRole]
+
+    SurveyResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        stakeholderName:
+          type: string
+        role:
+          type: string
+        thinkingFocus:
+          type: string
+        orientation:
+          type: string
+        changeRole:
+          type: string
+        mentalModel:
+          type: string
+        mentalModelDescription:
+          type: string
+        projectId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, stakeholderName, role, thinkingFocus, orientation, changeRole, mentalModel, mentalModelDescription, createdAt]
+
+    ProjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+        bcipCanvas:
+          type: string
+          nullable: true
+        changeLogic:
+          type: string
+          nullable: true
+        changeStrategy:
+          type: string
+          nullable: true
+        managerName:
+          type: string
+          nullable: true
+      required: [name]
+
+    ProjectResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        bcipCanvas:
+          type: string
+          nullable: true
+        changeLogic:
+          type: string
+          nullable: true
+        changeStrategy:
+          type: string
+          nullable: true
+        managerName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, createdAt, updatedAt]
+
+    GenerateMessageInput:
+      type: object
+      properties:
+        surveyId:
+          type: integer
+        projectId:
+          type: integer
+      required: [surveyId, projectId]
+
+    UpdateMessageInput:
+      type: object
+      properties:
+        editedContent:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, approved, sent]
+      required: []
+
+    MessageResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        surveyId:
+          type: integer
+        projectId:
+          type: integer
+        stakeholderName:
+          type: string
+        mentalModel:
+          type: string
+        generatedContent:
+          type: string
+        editedContent:
+          type: string
+          nullable: true
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, surveyId, projectId, stakeholderName, mentalModel, generatedContent, status, createdAt, updatedAt]
+
+    MentalModelCount:
+      type: object
+      properties:
+        mentalModel:
+          type: string
+        count:
+          type: integer
+      required: [mentalModel, count]
+
+    DashboardStats:
+      type: object
+      properties:
+        totalSurveys:
+          type: integer
+        totalProjects:
+          type: integer
+        totalMessages:
+          type: integer
+        approvedMessages:
+          type: integer
+        mentalModelDistribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/MentalModelCount"
+      required: [totalSurveys, totalProjects, totalMessages, approvedMessages, mentalModelDistribution]
