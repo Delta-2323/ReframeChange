@@ -442,7 +442,7 @@ function MessagesTab() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  const { data: messagesData, isLoading: msgLoading } = useGetMessages();
+  const { data: messagesData, isLoading: msgLoading, isError: msgError, refetch } = useGetMessages();
   const { data: projectsData } = useGetProjects();
   const { data: surveysData } = useGetSurveys();
   const generateMutation = useGenerateMessage();
@@ -452,6 +452,7 @@ function MessagesTab() {
 
   const noSurveys = !surveysData?.surveys.length;
   const noProjects = !projectsData?.projects.length;
+  const messages = messagesData?.messages ?? [];
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -474,6 +475,19 @@ function MessagesTab() {
   };
 
   if (msgLoading) return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+
+  if (msgError) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="p-4 rounded-full bg-destructive/10 mb-4">
+        <AlertTriangle className="h-8 w-8 text-destructive" />
+      </div>
+      <h4 className="font-semibold mb-2">Could not load messages</h4>
+      <p className="text-muted-foreground text-sm mb-4">There was an issue connecting to the server.</p>
+      <Button variant="outline" onClick={() => refetch()} className="gap-2">
+        <RefreshCw className="h-4 w-4" /> Try Again
+      </Button>
+    </div>
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -554,7 +568,7 @@ function MessagesTab() {
       </div>
 
       {/* Empty state */}
-      {messagesData?.messages.length === 0 ? (
+      {messages.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-2xl text-center bg-muted/20">
           <div className="p-4 rounded-full bg-primary/10 mb-4">
             <MessageSquare className="h-8 w-8 text-primary" />
@@ -578,47 +592,52 @@ function MessagesTab() {
         </div>
       ) : (
         <div className="space-y-3">
-          {messagesData?.messages.map((msg) => (
-            <div
-              key={msg.id}
-              className="flex flex-col sm:flex-row sm:items-center gap-4 bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow cursor-pointer group"
-              onClick={() => setLocation(`/manager/messages/${msg.id}`)}
-            >
-              {/* Left: Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-foreground truncate">{msg.stakeholderName}</span>
-                  <Badge className="shrink-0 text-xs bg-primary/10 text-primary border-0 hover:bg-primary/20 shadow-none">
-                    {msg.mentalModel}
-                  </Badge>
+          {messages.map((msg) => {
+            const preview = (msg.editedContent || msg.generatedContent || '').substring(0, 120);
+            return (
+              <div
+                key={msg.id}
+                className="flex flex-col sm:flex-row sm:items-center gap-4 bg-card border border-border rounded-xl p-4 hover:shadow-md transition-all cursor-pointer group"
+                onClick={() => setLocation(`/manager/messages/${msg.id}`)}
+              >
+                {/* Left: Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-semibold text-foreground">{msg.stakeholderName}</span>
+                    <Badge className="shrink-0 text-xs bg-primary/10 text-primary border-0 hover:bg-primary/20 shadow-none">
+                      {msg.mentalModel}
+                    </Badge>
+                  </div>
+                  {preview && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {preview}{preview.length >= 120 ? '…' : ''}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1.5">{format(new Date(msg.createdAt), 'MMM d, yyyy')}</p>
                 </div>
-                <p className="text-sm text-muted-foreground truncate">
-                  {(msg.editedContent || msg.generatedContent).substring(0, 100)}…
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">{format(new Date(msg.createdAt), 'MMM d, yyyy')}</p>
-              </div>
 
-              {/* Right: Status + Action */}
-              <div className="flex items-center gap-3 shrink-0">
-                {msg.status === 'approved' ? (
-                  <Badge className="bg-teal-500/10 text-teal-700 border-teal-200 shadow-none gap-1">
-                    <CheckCircle className="w-3 h-3" /> Approved
-                  </Badge>
-                ) : msg.status === 'sent' ? (
-                  <Badge className="bg-blue-500/10 text-blue-700 border-blue-200 shadow-none gap-1">
-                    <Send className="w-3 h-3" /> Sent
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-muted-foreground bg-muted/50 shadow-none gap-1">
-                    <Edit className="w-3 h-3" /> Draft
-                  </Badge>
-                )}
-                <Button size="sm" variant="outline" className="gap-1.5 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-colors">
-                  Review <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
+                {/* Right: Status + Action */}
+                <div className="flex items-center gap-3 shrink-0">
+                  {msg.status === 'approved' ? (
+                    <Badge className="bg-teal-500/10 text-teal-700 border-teal-200 shadow-none gap-1">
+                      <CheckCircle className="w-3 h-3" /> Approved
+                    </Badge>
+                  ) : msg.status === 'sent' ? (
+                    <Badge className="bg-blue-500/10 text-blue-700 border-blue-200 shadow-none gap-1">
+                      <Send className="w-3 h-3" /> Sent
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground bg-muted/50 shadow-none gap-1">
+                      <Edit className="w-3 h-3" /> Draft
+                    </Badge>
+                  )}
+                  <Button size="sm" variant="outline" className="gap-1.5 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-colors shrink-0">
+                    Review <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
