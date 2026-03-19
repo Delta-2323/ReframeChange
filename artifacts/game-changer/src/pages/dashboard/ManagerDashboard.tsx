@@ -450,74 +450,102 @@ function MessagesTab() {
   const [open, setOpen] = useState(false);
   const [genForm, setGenForm] = useState({ surveyId: '', projectId: '' });
 
+  const noSurveys = !surveysData?.surveys.length;
+  const noProjects = !projectsData?.projects.length;
+
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!genForm.surveyId || !genForm.projectId) {
-      toast({ title: "Please select both a survey and a project", variant: "destructive" });
+      toast({ title: "Please select both a stakeholder and a project", variant: "destructive" });
       return;
     }
-    
     try {
       const res = await generateMutation.mutateAsync({ 
         data: { surveyId: parseInt(genForm.surveyId), projectId: parseInt(genForm.projectId) } 
       });
-      toast({ title: "AI Message Generated!" });
+      toast({ title: "AI message generated!", description: "Opening the message for review..." });
       queryClient.invalidateQueries({ queryKey: getGetMessagesQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
       setOpen(false);
       setLocation(`/manager/messages/${res.id}`);
     } catch {
-      toast({ title: "Error generating message", variant: "destructive" });
+      toast({ title: "Failed to generate message", description: "Please try again.", variant: "destructive" });
     }
   };
 
-  if (msgLoading) return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  if (msgLoading) return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-2xl font-bold">AI Communications</h3>
-          <p className="text-muted-foreground">Manage and approve tailored stakeholder messages.</p>
+          <p className="text-muted-foreground">Generate, review, and approve tailored stakeholder messages.</p>
         </div>
-        
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-secondary hover:bg-secondary/90 text-white shadow-lg shadow-secondary/20">
-              <Sparkles className="mr-2 h-4 w-4" /> Generate Message
+            <Button className="gap-2 bg-primary shadow-md shadow-primary/20 shrink-0">
+              <Sparkles className="h-4 w-4" /> Generate New Message
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[520px]">
             <DialogHeader>
-              <DialogTitle>Generate Tailored Communication</DialogTitle>
+              <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> Generate AI Message</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleGenerate} className="space-y-6 py-4">
+
+            {/* Pre-requisite warnings */}
+            {(noSurveys || noProjects) && (
+              <div className="space-y-2 my-2">
+                {noSurveys && (
+                  <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>No stakeholder surveys yet. Share the survey link with stakeholders first.</span>
+                  </div>
+                )}
+                {noProjects && (
+                  <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>No projects created yet. Create a project in the Projects tab first.</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <form onSubmit={handleGenerate} className="space-y-5 py-2">
               <div className="space-y-2">
-                <Label>Target Stakeholder</Label>
+                <Label className="font-semibold">1. Select Stakeholder</Label>
+                <p className="text-xs text-muted-foreground">Choose the stakeholder whose survey you want to generate a message for.</p>
                 <Select onValueChange={(v) => setGenForm(p => ({...p, surveyId: v}))}>
-                  <SelectTrigger><SelectValue placeholder="Select a surveyed stakeholder..." /></SelectTrigger>
+                  <SelectTrigger className="h-11"><SelectValue placeholder={noSurveys ? "No surveys available" : "Choose a stakeholder..."} /></SelectTrigger>
                   <SelectContent>
                     {surveysData?.surveys.map(s => (
-                      <SelectItem key={s.id} value={s.id.toString()}>{s.stakeholderName} ({s.mentalModel})</SelectItem>
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        <span className="font-medium">{s.stakeholderName}</span>
+                        <span className="text-muted-foreground ml-2 text-xs">· {s.mentalModel}</span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Project Context</Label>
+                <Label className="font-semibold">2. Select Project</Label>
+                <p className="text-xs text-muted-foreground">The AI will use this project's context to personalise the message.</p>
                 <Select onValueChange={(v) => setGenForm(p => ({...p, projectId: v}))}>
-                  <SelectTrigger><SelectValue placeholder="Select project context..." /></SelectTrigger>
+                  <SelectTrigger className="h-11"><SelectValue placeholder={noProjects ? "No projects available" : "Choose a project..."} /></SelectTrigger>
                   <SelectContent>
                     {projectsData?.projects.map(p => (
                       <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                     ))}
                   </SelectContent>
-            </Select>
+                </Select>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={generateMutation.isPending} className="w-full sm:w-auto bg-primary">
-                  {generateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  Generate AI Message
+                <Button type="submit" disabled={generateMutation.isPending || noSurveys || noProjects} className="w-full bg-primary">
+                  {generateMutation.isPending
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</>
+                    : <><Sparkles className="mr-2 h-4 w-4" /> Generate AI Message</>
+                  }
                 </Button>
               </DialogFooter>
             </form>
@@ -525,54 +553,74 @@ function MessagesTab() {
         </Dialog>
       </div>
 
-      <div className="border rounded-xl bg-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead>Date</TableHead>
-              <TableHead>Stakeholder</TableHead>
-              <TableHead>Mental Model</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {messagesData?.messages.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No messages generated yet.</TableCell></TableRow>
-            )}
-            {messagesData?.messages.map((msg) => (
-              <TableRow key={msg.id} className="group">
-                <TableCell className="text-muted-foreground">
-                  {format(new Date(msg.createdAt), 'MMM d, yyyy')}
-                </TableCell>
-                <TableCell className="font-medium">{msg.stakeholderName}</TableCell>
-                <TableCell>
-                  <span className="text-sm font-medium text-muted-foreground">{msg.mentalModel}</span>
-                </TableCell>
-                <TableCell>
-                  {msg.status === 'approved' ? (
-                    <Badge className="bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 border-0"><CheckCircle className="w-3 h-3 mr-1" /> Approved</Badge>
-                  ) : msg.status === 'sent' ? (
-                    <Badge className="bg-secondary/10 text-secondary hover:bg-secondary/20 border-0"><Send className="w-3 h-3 mr-1" /> Sent</Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-muted-foreground bg-muted/50 border-border"><Edit className="w-3 h-3 mr-1" /> Draft</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setLocation(`/manager/messages/${msg.id}`)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    Review <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Empty state */}
+      {messagesData?.messages.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-2xl text-center bg-muted/20">
+          <div className="p-4 rounded-full bg-primary/10 mb-4">
+            <MessageSquare className="h-8 w-8 text-primary" />
+          </div>
+          <h4 className="text-lg font-semibold mb-2">No messages yet</h4>
+          <p className="text-muted-foreground text-sm max-w-xs mb-6">
+            Generate your first AI-tailored communication by clicking "Generate New Message" above.
+            {noSurveys && " You'll need at least one completed survey first."}
+            {noProjects && " You'll also need a project set up in the Projects tab."}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 text-xs text-muted-foreground">
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${noSurveys ? 'bg-amber-50 text-amber-700' : 'bg-teal-50 text-teal-700'}`}>
+              {noSurveys ? <AlertTriangle className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
+              Surveys: {surveysData?.surveys.length ?? 0} completed
+            </span>
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${noProjects ? 'bg-amber-50 text-amber-700' : 'bg-teal-50 text-teal-700'}`}>
+              {noProjects ? <AlertTriangle className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
+              Projects: {projectsData?.projects.length ?? 0} created
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {messagesData?.messages.map((msg) => (
+            <div
+              key={msg.id}
+              className="flex flex-col sm:flex-row sm:items-center gap-4 bg-card border border-border rounded-xl p-4 hover:shadow-sm transition-shadow cursor-pointer group"
+              onClick={() => setLocation(`/manager/messages/${msg.id}`)}
+            >
+              {/* Left: Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-foreground truncate">{msg.stakeholderName}</span>
+                  <Badge className="shrink-0 text-xs bg-primary/10 text-primary border-0 hover:bg-primary/20 shadow-none">
+                    {msg.mentalModel}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground truncate">
+                  {(msg.editedContent || msg.generatedContent).substring(0, 100)}…
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">{format(new Date(msg.createdAt), 'MMM d, yyyy')}</p>
+              </div>
+
+              {/* Right: Status + Action */}
+              <div className="flex items-center gap-3 shrink-0">
+                {msg.status === 'approved' ? (
+                  <Badge className="bg-teal-500/10 text-teal-700 border-teal-200 shadow-none gap-1">
+                    <CheckCircle className="w-3 h-3" /> Approved
+                  </Badge>
+                ) : msg.status === 'sent' ? (
+                  <Badge className="bg-blue-500/10 text-blue-700 border-blue-200 shadow-none gap-1">
+                    <Send className="w-3 h-3" /> Sent
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-muted-foreground bg-muted/50 shadow-none gap-1">
+                    <Edit className="w-3 h-3" /> Draft
+                  </Badge>
+                )}
+                <Button size="sm" variant="outline" className="gap-1.5 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-colors">
+                  Review <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
