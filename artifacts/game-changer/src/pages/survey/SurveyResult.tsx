@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useGetSurvey } from "@workspace/api-client-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, ArrowRight, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowRight, RotateCcw, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
@@ -129,16 +129,16 @@ export default function SurveyResult() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => setLocation("/")}
+                  onClick={() => setLocation("/survey")}
                   className="flex-1 h-11 border-2 rounded-xl text-sm font-medium gap-2"
                 >
-                  <RotateCcw className="h-4 w-4" /> Return Home
+                  <RotateCcw className="h-4 w-4" /> Take Another Survey
                 </Button>
                 <Button
-                  onClick={() => setLocation("/manager")}
+                  onClick={() => setLocation("/")}
                   className="flex-1 h-11 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-medium gap-2"
                 >
-                  <ShieldCheck className="h-4 w-4" /> Go to Manager Portal
+                  Return Home
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>

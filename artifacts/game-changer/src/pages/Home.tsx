@@ -71,15 +71,6 @@ export default function Home() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/manager" className="w-full sm:w-auto">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full h-12 px-7 text-base font-semibold border-2 border-border hover:border-primary/30 rounded-xl gap-2 transition-all hover:-translate-y-0.5"
-                  >
-                    Manager Login
-                  </Button>
-                </Link>
               </div>
             </motion.div>
           </div>
@@ -156,7 +147,10 @@ export default function Home() {
             </div>
             <span className="text-sm font-semibold text-muted-foreground">Reframe Change · REM16™</span>
           </div>
-          <p className="text-xs text-muted-foreground">Powered by organisational psychology and AI</p>
+          <p className="text-xs text-muted-foreground">
+            Powered by organisational psychology and AI ·{" "}
+            <Link href="/manager" className="hover:text-foreground transition-colors">Admin</Link>
+          </p>
         </div>
       </footer>
     </div>
