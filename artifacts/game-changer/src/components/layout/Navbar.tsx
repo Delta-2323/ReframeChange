@@ -1,44 +1,57 @@
 import { Link, useLocation } from "wouter";
-import { Activity, ShieldCheck, Home as HomeIcon } from "lucide-react";
+import { LayoutDashboard, ClipboardList, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Navbar() {
   const [location] = useLocation();
+  const isManager = location.startsWith("/manager");
+  const isSurvey = location.startsWith("/survey");
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-md">
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img 
-              src={`${import.meta.env.BASE_URL}images/logo-icon.png`} 
-              alt="Game Changer Logo" 
-              className="h-8 w-8 object-contain"
-            />
-            <Link 
-              href="/" 
-              className="font-display text-xl font-bold text-primary transition-colors hover:text-secondary"
-            >
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-15 items-center justify-between" style={{ height: '60px' }}>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <span className="text-white font-display font-bold text-sm">GC</span>
+            </div>
+            <span className="font-display text-lg font-bold text-primary tracking-tight group-hover:text-secondary transition-colors">
               Game Changer
-            </Link>
-          </div>
-          
-          <div className="flex items-center gap-4">
+            </span>
+          </Link>
+
+          {/* Nav links */}
+          <div className="flex items-center gap-1">
             <Link href="/">
-              <Button variant={location === "/" ? "secondary" : "ghost"} size="sm" className="hidden md:flex gap-2">
-                <HomeIcon className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 text-sm font-medium hidden sm:flex ${location === "/" ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+              >
+                <LayoutDashboard className="h-4 w-4" />
                 Home
               </Button>
             </Link>
             <Link href="/survey">
-              <Button variant={location === "/survey" ? "secondary" : "ghost"} size="sm" className="hidden md:flex gap-2">
-                <Activity className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 text-sm font-medium hidden sm:flex ${isSurvey ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+              >
+                <ClipboardList className="h-4 w-4" />
                 Take Survey
               </Button>
             </Link>
-            <div className="h-6 w-px bg-border hidden md:block"></div>
+
+            <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
+
             <Link href="/manager">
-              <Button variant={location.startsWith("/manager") ? "default" : "outline"} size="sm" className="gap-2">
+              <Button
+                size="sm"
+                className={`gap-2 text-sm font-medium ${isManager ? "bg-primary text-white shadow-sm" : "bg-primary/8 text-primary border border-primary/20 hover:bg-primary hover:text-white"}`}
+                style={{ backgroundColor: isManager ? undefined : 'hsl(220 55% 18% / 0.06)' }}
+              >
                 <ShieldCheck className="h-4 w-4" />
                 Manager Portal
               </Button>

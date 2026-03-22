@@ -647,44 +647,64 @@ function MessagesTab() {
 export default function ManagerDashboard() {
   const { isAuthed, isChecking, logout, login } = useManagerAuth();
 
-  if (isChecking) return null;
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex flex-col items-center justify-center gap-4">
+          <div className="h-10 w-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </main>
+      </div>
+    );
+  }
 
   if (!isAuthed) {
     return <ManagerAuth onLogin={login} />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Navbar />
-      
-      <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto w-full">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+
+      <div className="border-b border-border bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-display font-bold text-foreground">Change Hub</h1>
-            <p className="text-muted-foreground text-lg mt-1">Monitor readiness and orchestrate communication.</p>
+            <h1 className="text-2xl font-display font-bold text-foreground">Change Hub</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">Monitor readiness and orchestrate stakeholder communication.</p>
           </div>
-          <Button variant="outline" onClick={logout} size="sm" className="text-muted-foreground hover:text-foreground">
-            <LogOut className="mr-2 h-4 w-4" /> Lock Console
+          <Button variant="outline" onClick={logout} size="sm" className="gap-2 text-muted-foreground hover:text-foreground text-sm">
+            <LogOut className="h-4 w-4" /> Sign Out
           </Button>
         </div>
+      </div>
 
-        <div className="bg-white rounded-3xl shadow-xl shadow-black/5 border border-border p-6 md:p-8 min-h-[600px]">
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-muted/50 p-1 mb-8 rounded-xl h-auto">
-              <TabsTrigger value="overview" className="rounded-lg py-2.5 data-[state=active]:shadow-sm">Overview</TabsTrigger>
-              <TabsTrigger value="projects" className="rounded-lg py-2.5 data-[state=active]:shadow-sm">Projects</TabsTrigger>
-              <TabsTrigger value="surveys" className="rounded-lg py-2.5 data-[state=active]:shadow-sm">Surveys</TabsTrigger>
-              <TabsTrigger value="messages" className="rounded-lg py-2.5 data-[state=active]:shadow-sm">Messages</TabsTrigger>
+      <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        <Tabs defaultValue="overview" className="w-full">
+          <div className="border-b border-border mb-6">
+            <TabsList className="h-auto bg-transparent p-0 gap-0 rounded-none">
+              {[
+                { value: "overview", label: "Overview" },
+                { value: "projects", label: "Projects" },
+                { value: "surveys", label: "Surveys" },
+                { value: "messages", label: "Messages" },
+              ].map(tab => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-5 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
-            
-            <div className="mt-6">
-              <TabsContent value="overview"><OverviewTab /></TabsContent>
-              <TabsContent value="projects"><ProjectsTab /></TabsContent>
-              <TabsContent value="surveys"><SurveysTab /></TabsContent>
-              <TabsContent value="messages"><MessagesTab /></TabsContent>
-            </div>
-          </Tabs>
-        </div>
+          </div>
+
+          <TabsContent value="overview"><OverviewTab /></TabsContent>
+          <TabsContent value="projects"><ProjectsTab /></TabsContent>
+          <TabsContent value="surveys"><SurveysTab /></TabsContent>
+          <TabsContent value="messages"><MessagesTab /></TabsContent>
+        </Tabs>
       </main>
     </div>
   );

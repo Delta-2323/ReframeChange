@@ -113,28 +113,28 @@ export default function SurveyForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Navbar />
       
-      <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto w-full">
+      <main className="flex-1 py-10 px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto w-full">
         
         {/* Progress Bar */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between text-sm font-medium text-muted-foreground mb-3">
+        <div className="mb-8">
+          <div className="flex items-center justify-between text-sm font-medium text-muted-foreground mb-2.5">
             <span>Step {step} of 4</span>
-            <span className="text-primary">{Math.round((step / 4) * 100)}% Complete</span>
+            <span className="font-semibold text-primary">{Math.round((step / 4) * 100)}% Complete</span>
           </div>
-          <div className="h-2.5 w-full bg-border rounded-full overflow-hidden">
+          <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-secondary"
+              className="h-full bg-secondary rounded-full"
               initial={{ width: `${((step - 1) / 4) * 100}%` }}
               animate={{ width: `${(step / 4) * 100}%` }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
             />
           </div>
         </div>
 
-        <div className="bg-card rounded-3xl shadow-xl shadow-black/5 border border-border overflow-hidden">
+        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
           <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 md:p-12">
             <AnimatePresence mode="wait">
               
