@@ -117,9 +117,9 @@ export default function SurveyResult() {
                     <Sparkles className="h-4 w-4 text-secondary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground text-sm mb-1">Your manager will be in touch</p>
+                    <p className="font-semibold text-foreground text-sm mb-1">Someone from our team will be in touch</p>
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                      Based on your profile, your change manager can now generate a personalised communication tailored to your mental model — addressing exactly what matters most to you.
+                      Thank you for completing the survey. A member of our team will reach out to you shortly with information tailored specifically to your needs.
                     </p>
                   </div>
                 </div>
