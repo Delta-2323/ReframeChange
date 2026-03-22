@@ -14,10 +14,10 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <span className="text-white font-display font-bold text-sm">GC</span>
+              <span className="text-white font-display font-bold text-sm">RC</span>
             </div>
             <span className="font-display text-lg font-bold text-primary tracking-tight group-hover:text-secondary transition-colors">
-              Game Changer
+              Reframe Change
             </span>
           </Link>
 

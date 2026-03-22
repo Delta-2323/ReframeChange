@@ -94,10 +94,10 @@ export default function Home() {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <div className="text-center mb-14">
-                <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-3">Why Game Changer</p>
+                <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-3">Why Reframe Change</p>
                 <h2 className="text-3xl md:text-4xl font-display font-bold text-primary">Built for the human side of change</h2>
                 <p className="mt-4 text-muted-foreground text-lg max-w-xl mx-auto">
-                  Every stakeholder is different. Game Changer makes it easy to reach them where they are.
+                  Every stakeholder is different. Reframe Change makes it easy to reach them where they are.
                 </p>
               </div>
 
@@ -152,9 +152,9 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-white font-display font-bold text-xs">GC</span>
+              <span className="text-white font-display font-bold text-xs">RC</span>
             </div>
-            <span className="text-sm font-semibold text-muted-foreground">Game Changer · REM16™</span>
+            <span className="text-sm font-semibold text-muted-foreground">Reframe Change · REM16™</span>
           </div>
           <p className="text-xs text-muted-foreground">Powered by organisational psychology and AI</p>
         </div>

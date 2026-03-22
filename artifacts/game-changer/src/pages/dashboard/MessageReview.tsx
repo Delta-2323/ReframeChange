@@ -59,7 +59,7 @@ function downloadAsPDF(stakeholderName: string, mentalModel: string, content: st
     </head>
     <body>
       <div class="header">
-        <div class="logo">★ Game Changer · REM16™ Framework</div>
+        <div class="logo">★ Reframe Change · REM16™ Framework</div>
         <h1>Change Management Communication</h1>
         <div class="subtitle">Psychologically safe, personalised stakeholder message</div>
       </div>
@@ -82,7 +82,7 @@ function downloadAsPDF(stakeholderName: string, mentalModel: string, content: st
         <div class="content">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
       </div>
       <div class="footer">
-        <span>Game Changer — REM16™ Framework</span>
+        <span>Reframe Change — REM16™ Framework</span>
         <span>Generated on ${date}</span>
       </div>
     </body>
