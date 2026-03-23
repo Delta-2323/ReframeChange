@@ -3,7 +3,7 @@ import { useParams, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { 
   ArrowLeft, CheckCircle2, Save, Send, User, Sparkles, Loader2, AlertCircle,
-  Download, RotateCcw, Edit3, Eye, FileText, Clock, Brain
+  Download, RotateCcw, Edit3, Eye, FileText, Clock, Brain, Mail
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -13,11 +13,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 import { 
   useGetMessage, 
-  useUpdateMessage, 
+  useUpdateMessage,
+  useSendMessageEmail,
   getGetMessageQueryKey, 
   getGetMessagesQueryKey,
   UpdateMessageInputStatus
@@ -109,7 +115,11 @@ export default function MessageReview() {
   const [isEdited, setIsEdited] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const sendEmailMutation = useSendMessageEmail();
 
   useEffect(() => {
     if (message) {
@@ -163,6 +173,27 @@ export default function MessageReview() {
   const handleDownloadPDF = () => {
     if (!message) return;
     downloadAsPDF(message.stakeholderName, message.mentalModel, content);
+  };
+
+  const handleOpenEmailDialog = () => {
+    if (!message) return;
+    setEmailSubject(`Change Update — ${message.stakeholderName}`);
+    setShowEmailDialog(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailSubject.trim()) return;
+    try {
+      await sendEmailMutation.mutateAsync({ id: msgId, data: { subject: emailSubject.trim() } });
+      queryClient.invalidateQueries({ queryKey: getGetMessageQueryKey(msgId) });
+      queryClient.invalidateQueries({ queryKey: getGetMessagesQueryKey() });
+      setShowEmailDialog(false);
+      toast({ title: "Email sent!", description: `Successfully delivered to ${message?.stakeholderName}.` });
+      setLocation("/manager");
+    } catch (err: any) {
+      const msg = err?.response?.data?.error ?? err?.message ?? "Failed to send email";
+      toast({ title: "Email failed", description: msg, variant: "destructive" });
+    }
   };
 
   if (isLoading) {
@@ -425,11 +456,10 @@ export default function MessageReview() {
                 {message.status === 'approved' && (
                   <Button
                     className="w-full justify-start gap-2.5 h-10 bg-primary text-white"
-                    onClick={() => saveChanges("sent")}
-                    disabled={isSaving}
+                    onClick={handleOpenEmailDialog}
                   >
-                    <Send className="h-4 w-4" />
-                    Mark as Sent
+                    <Mail className="h-4 w-4" />
+                    Send Email to Stakeholder
                   </Button>
                 )}
                 {hasBeenEdited && (
@@ -457,6 +487,53 @@ export default function MessageReview() {
           </div>
         </div>
       </main>
+
+      {/* Send Email Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Send Email to Stakeholder
+            </DialogTitle>
+            <DialogDescription>
+              This will send the approved message directly to <strong>{message?.stakeholderName}</strong>'s registered email address.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="emailSubject" className="text-sm font-semibold">Email Subject</Label>
+              <Input
+                id="emailSubject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="e.g. Change Update for your team"
+                className="h-11 rounded-xl"
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSendEmail(); }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2.5">
+              The message body will be the approved content shown in the editor.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)} className="rounded-xl">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendEmail}
+              disabled={sendEmailMutation.isPending || !emailSubject.trim()}
+              className="rounded-xl bg-primary text-white gap-2"
+            >
+              {sendEmailMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+              ) : (
+                <><Mail className="h-4 w-4" /> Send Email</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

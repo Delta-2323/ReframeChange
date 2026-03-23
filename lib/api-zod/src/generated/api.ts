@@ -19,6 +19,7 @@ export const HealthCheckResponse = zod.object({
  */
 export const SubmitSurveyBody = zod.object({
   stakeholderName: zod.string(),
+  stakeholderEmail: zod.string().email(),
   role: zod.string(),
   thinkingFocus: zod.enum(["Proof", "Process", "People", "Possibility"]),
   orientation: zod.enum(["Eager", "Cautious"]),
@@ -34,6 +35,7 @@ export const GetSurveysResponse = zod.object({
     zod.object({
       id: zod.number(),
       stakeholderName: zod.string(),
+      stakeholderEmail: zod.string(),
       role: zod.string(),
       thinkingFocus: zod.string(),
       orientation: zod.string(),
@@ -56,6 +58,7 @@ export const GetSurveyParams = zod.object({
 export const GetSurveyResponse = zod.object({
   id: zod.number(),
   stakeholderName: zod.string(),
+  stakeholderEmail: zod.string(),
   role: zod.string(),
   thinkingFocus: zod.string(),
   orientation: zod.string(),
@@ -210,6 +213,22 @@ export const UpdateMessageResponse = zod.object({
   status: zod.string(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
+});
+
+/**
+ * @summary Send a message to the stakeholder via email
+ */
+export const SendMessageEmailParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendMessageEmailBody = zod.object({
+  subject: zod.string(),
+});
+
+export const SendMessageEmailResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
 });
 
 /**

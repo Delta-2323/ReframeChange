@@ -11,6 +11,7 @@ import type { SurveyInputThinkingFocus } from "./surveyInputThinkingFocus";
 
 export interface SurveyInput {
   stakeholderName: string;
+  stakeholderEmail: string;
   role: string;
   thinkingFocus: SurveyInputThinkingFocus;
   orientation: SurveyInputOrientation;

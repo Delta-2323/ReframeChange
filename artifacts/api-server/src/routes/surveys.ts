@@ -19,6 +19,7 @@ router.post("/", async (req, res) => {
 
     const [survey] = await db.insert(surveysTable).values({
       stakeholderName: body.stakeholderName,
+      stakeholderEmail: body.stakeholderEmail,
       role: body.role,
       thinkingFocus: body.thinkingFocus,
       orientation: body.orientation,

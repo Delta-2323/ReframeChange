@@ -9,6 +9,7 @@
 export interface SurveyResponse {
   id: number;
   stakeholderName: string;
+  stakeholderEmail: string;
   role: string;
   thinkingFocus: string;
   orientation: string;

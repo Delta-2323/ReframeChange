@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { aiMessagesTable, surveysTable, projectsTable } from "@workspace/db";
-import { GenerateMessageBody, GetMessageParams, UpdateMessageBody } from "@workspace/api-zod";
+import { GenerateMessageBody, GetMessageParams, UpdateMessageBody, SendMessageEmailBody } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { eq } from "drizzle-orm";
+import { sendEmail } from "../lib/email.js";
 
 const router: IRouter = Router();
 
@@ -152,6 +153,63 @@ router.put("/:id", async (req, res) => {
   } catch (error) {
     console.error("Error updating message:", error);
     res.status(400).json({ error: "Invalid message data" });
+  }
+});
+
+router.post("/:id/send-email", async (req, res) => {
+  try {
+    const { id } = GetMessageParams.parse({ id: Number(req.params.id) });
+    const body = SendMessageEmailBody.parse(req.body);
+
+    const [message] = await db.select().from(aiMessagesTable).where(eq(aiMessagesTable.id, id));
+    if (!message) {
+      res.status(404).json({ error: "Message not found" });
+      return;
+    }
+
+    const [survey] = await db.select().from(surveysTable).where(eq(surveysTable.id, message.surveyId));
+    if (!survey) {
+      res.status(404).json({ error: "Survey not found" });
+      return;
+    }
+
+    if (!survey.stakeholderEmail || survey.stakeholderEmail === "unknown@example.com") {
+      res.status(400).json({ error: "Stakeholder does not have a valid email address" });
+      return;
+    }
+
+    const content = message.editedContent || message.generatedContent;
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+        <div style="background: #0f2044; padding: 28px 32px; border-radius: 12px 12px 0 0;">
+          <p style="color: rgba(255,255,255,0.6); font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 4px;">Reframe Change · REM16™ Framework</p>
+        </div>
+        <div style="background: #ffffff; padding: 32px; border: 1px solid #e5e7eb; border-top: 0; border-radius: 0 0 12px 12px;">
+          <p style="white-space: pre-wrap; line-height: 1.7; font-size: 15px; color: #374151;">${content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+        </div>
+      </div>
+    `;
+
+    await sendEmail({
+      to: survey.stakeholderEmail,
+      subject: body.subject,
+      text: content,
+      html: htmlContent,
+    });
+
+    await db.update(aiMessagesTable)
+      .set({ status: "sent", updatedAt: new Date() })
+      .where(eq(aiMessagesTable.id, id));
+
+    res.json({ success: true, message: `Email sent to ${survey.stakeholderEmail}` });
+  } catch (error: any) {
+    console.error("Error sending email:", error);
+    if (error.message?.includes("SENDGRID_API_KEY")) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: "Failed to send email" });
+    }
   }
 });
 

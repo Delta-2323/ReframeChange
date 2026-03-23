@@ -28,6 +28,8 @@ import type {
   MessageResponse,
   ProjectInput,
   ProjectResponse,
+  SendEmailInput,
+  SendEmailResponse,
   SurveyInput,
   SurveyResponse,
   UpdateMessageInput,
@@ -1031,6 +1033,93 @@ export const useUpdateMessage = <
   TContext
 > => {
   return useMutation(getUpdateMessageMutationOptions(options));
+};
+
+/**
+ * @summary Send a message to the stakeholder via email
+ */
+export const getSendMessageEmailUrl = (id: number) => {
+  return `/api/messages/${id}/send-email`;
+};
+
+export const sendMessageEmail = async (
+  id: number,
+  sendEmailInput: SendEmailInput,
+  options?: RequestInit,
+): Promise<SendEmailResponse> => {
+  return customFetch<SendEmailResponse>(getSendMessageEmailUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sendEmailInput),
+  });
+};
+
+export const getSendMessageEmailMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendMessageEmail>>,
+    TError,
+    { id: number; data: BodyType<SendEmailInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendMessageEmail>>,
+  TError,
+  { id: number; data: BodyType<SendEmailInput> },
+  TContext
+> => {
+  const mutationKey = ["sendMessageEmail"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendMessageEmail>>,
+    { id: number; data: BodyType<SendEmailInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return sendMessageEmail(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendMessageEmailMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendMessageEmail>>
+>;
+export type SendMessageEmailMutationBody = BodyType<SendEmailInput>;
+export type SendMessageEmailMutationError = ErrorType<void>;
+
+/**
+ * @summary Send a message to the stakeholder via email
+ */
+export const useSendMessageEmail = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendMessageEmail>>,
+    TError,
+    { id: number; data: BodyType<SendEmailInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendMessageEmail>>,
+  TError,
+  { id: number; data: BodyType<SendEmailInput> },
+  TContext
+> => {
+  return useMutation(getSendMessageEmailMutationOptions(options));
 };
 
 /**

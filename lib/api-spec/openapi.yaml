@@ -246,6 +246,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /messages/{id}/send-email:
+    post:
+      operationId: sendMessageEmail
+      tags: [messages]
+      summary: Send a message to the stakeholder via email
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailInput"
+      responses:
+        "200":
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendEmailResponse"
+        "404":
+          description: Message or survey not found
+        "500":
+          description: Failed to send email
+
   /dashboard/ai-summary:
     post:
       operationId: generateAiSummary
@@ -292,6 +321,9 @@ components:
       properties:
         stakeholderName:
           type: string
+        stakeholderEmail:
+          type: string
+          format: email
         role:
           type: string
         thinkingFocus:
@@ -306,7 +338,7 @@ components:
         projectId:
           type: integer
           nullable: true
-      required: [stakeholderName, role, thinkingFocus, orientation, changeRole]
+      required: [stakeholderName, stakeholderEmail, role, thinkingFocus, orientation, changeRole]
 
     SurveyResponse:
       type: object
@@ -314,6 +346,8 @@ components:
         id:
           type: integer
         stakeholderName:
+          type: string
+        stakeholderEmail:
           type: string
         role:
           type: string
@@ -333,7 +367,7 @@ components:
         createdAt:
           type: string
           format: date-time
-      required: [id, stakeholderName, role, thinkingFocus, orientation, changeRole, mentalModel, mentalModelDescription, createdAt]
+      required: [id, stakeholderName, stakeholderEmail, role, thinkingFocus, orientation, changeRole, mentalModel, mentalModelDescription, createdAt]
 
     ProjectInput:
       type: object
@@ -466,6 +500,22 @@ components:
           type: string
           format: date-time
       required: [summary, keyInsights, recommendations, riskFlags, generatedAt]
+
+    SendEmailInput:
+      type: object
+      properties:
+        subject:
+          type: string
+      required: [subject]
+
+    SendEmailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success, message]
 
     DashboardStats:
       type: object

@@ -22,6 +22,7 @@ import {
 
 const surveySchema = z.object({
   stakeholderName: z.string().min(2, "Name is required"),
+  stakeholderEmail: z.string().email("Please enter a valid email address"),
   role: z.string().min(2, "Role is required"),
   thinkingFocus: z.enum(["Proof", "Process", "People", "Possibility"], { required_error: "Please select a focus area" }),
   orientation: z.enum(["Eager", "Cautious"], { required_error: "Please select an orientation" }),
@@ -43,6 +44,7 @@ export default function SurveyForm() {
     resolver: zodResolver(surveySchema),
     defaultValues: {
       stakeholderName: "",
+      stakeholderEmail: "",
       role: "",
       projectId: null,
     },
@@ -69,7 +71,7 @@ export default function SurveyForm() {
   };
 
   const nextStep = async () => {
-    const isValid = await form.trigger(step === 1 ? ["stakeholderName", "role"] : 
+    const isValid = await form.trigger(step === 1 ? ["stakeholderName", "stakeholderEmail", "role"] : 
                                        step === 2 ? ["thinkingFocus"] : 
                                        step === 3 ? ["orientation"] : []);
     if (isValid) {
@@ -167,6 +169,20 @@ export default function SurveyForm() {
                       )}
                     </div>
                     
+                    <div className="space-y-2">
+                      <Label htmlFor="stakeholderEmail" className="text-base font-semibold">Email Address</Label>
+                      <Input 
+                        id="stakeholderEmail"
+                        type="email"
+                        placeholder="jane.doe@company.com" 
+                        className="h-14 text-lg rounded-xl border-2 focus-visible:ring-secondary/20"
+                        {...form.register("stakeholderEmail")} 
+                      />
+                      {form.formState.errors.stakeholderEmail && (
+                        <p className="text-sm text-destructive">{form.formState.errors.stakeholderEmail.message}</p>
+                      )}
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="role" className="text-base font-semibold">Your Role / Title</Label>
                       <Input 

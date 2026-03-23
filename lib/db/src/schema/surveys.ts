@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 export const surveysTable = pgTable("surveys", {
   id: serial("id").primaryKey(),
   stakeholderName: text("stakeholder_name").notNull(),
+  stakeholderEmail: text("stakeholder_email").notNull(),
   role: text("role").notNull(),
   thinkingFocus: text("thinking_focus").notNull(),
   orientation: text("orientation").notNull(),

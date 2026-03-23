@@ -18,6 +18,8 @@ export * from "./mentalModelCount";
 export * from "./messageResponse";
 export * from "./projectInput";
 export * from "./projectResponse";
+export * from "./sendEmailInput";
+export * from "./sendEmailResponse";
 export * from "./surveyInput";
 export * from "./surveyInputChangeRole";
 export * from "./surveyInputOrientation";

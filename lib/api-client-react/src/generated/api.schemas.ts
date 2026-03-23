@@ -37,6 +37,7 @@ export const SurveyInputChangeRole = {
 
 export interface SurveyInput {
   stakeholderName: string;
+  stakeholderEmail: string;
   role: string;
   thinkingFocus: SurveyInputThinkingFocus;
   orientation: SurveyInputOrientation;
@@ -47,6 +48,7 @@ export interface SurveyInput {
 export interface SurveyResponse {
   id: number;
   stakeholderName: string;
+  stakeholderEmail: string;
   role: string;
   thinkingFocus: string;
   orientation: string;
@@ -123,6 +125,15 @@ export interface AiSummaryResponse {
   recommendations: string[];
   riskFlags: string[];
   generatedAt: string;
+}
+
+export interface SendEmailInput {
+  subject: string;
+}
+
+export interface SendEmailResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface DashboardStats {
