@@ -92,6 +92,8 @@ export const GetProjectsResponse = zod.object({
       changeLogic: zod.string().nullish(),
       changeStrategy: zod.string().nullish(),
       managerName: zod.string().nullish(),
+      documentPath: zod.string().nullish(),
+      documentName: zod.string().nullish(),
       createdAt: zod.date(),
       updatedAt: zod.date(),
     }),
@@ -112,6 +114,8 @@ export const GetProjectResponse = zod.object({
   changeLogic: zod.string().nullish(),
   changeStrategy: zod.string().nullish(),
   managerName: zod.string().nullish(),
+  documentPath: zod.string().nullish(),
+  documentName: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -138,8 +142,57 @@ export const UpdateProjectResponse = zod.object({
   changeLogic: zod.string().nullish(),
   changeStrategy: zod.string().nullish(),
   managerName: zod.string().nullish(),
+  documentPath: zod.string().nullish(),
+  documentName: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
+});
+
+/**
+ * @summary Attach an uploaded document to a project
+ */
+export const UpdateProjectDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateProjectDocumentBody = zod.object({
+  documentPath: zod.string(),
+  documentName: zod.string(),
+});
+
+export const UpdateProjectDocumentResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  bcipCanvas: zod.string().nullish(),
+  changeLogic: zod.string().nullish(),
+  changeStrategy: zod.string().nullish(),
+  managerName: zod.string().nullish(),
+  documentPath: zod.string().nullish(),
+  documentName: zod.string().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string().min(1),
+  size: zod.number().min(1),
+  contentType: zod.string().min(1),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string().url(),
+  objectPath: zod.string(),
+});
+
+/**
+ * @summary Serve an uploaded object
+ */
+export const GetStorageObjectParams = zod.object({
+  objectPath: zod.coerce.string(),
 });
 
 /**

@@ -17,6 +17,8 @@ tags:
     description: AI-generated message management
   - name: dashboard
     description: Dashboard and analytics
+  - name: storage
+    description: Object storage upload and serving endpoints.
 paths:
   /healthz:
     get:
@@ -167,6 +169,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProjectResponse"
+
+  /projects/{id}/document:
+    patch:
+      operationId: updateProjectDocument
+      tags: [projects]
+      summary: Attach an uploaded document to a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [documentPath, documentName]
+              properties:
+                documentPath:
+                  type: string
+                documentName:
+                  type: string
+      responses:
+        "200":
+          description: Document attached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "404":
+          description: Project not found
+
+  /storage/uploads/request-url:
+    post:
+      tags: [storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Missing or invalid required fields.
+        "500":
+          description: Failed to generate upload URL.
+
+  /storage/objects/{objectPath}:
+    get:
+      tags: [storage]
+      operationId: getStorageObject
+      summary: Serve an uploaded object
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object content streamed.
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Object not found.
 
   /messages:
     post:
@@ -407,6 +487,12 @@ components:
         managerName:
           type: string
           nullable: true
+        documentPath:
+          type: string
+          nullable: true
+        documentName:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -516,6 +602,30 @@ components:
         message:
           type: string
       required: [success, message]
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
 
     DashboardStats:
       type: object

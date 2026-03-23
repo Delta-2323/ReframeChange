@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 import { 
   Users, Briefcase, FileText, CheckCircle, Plus, Edit, Send, Loader2, Sparkles, MessageSquare, LogOut,
-  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight
+  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight, Paperclip, Download, FileUp
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -13,9 +13,10 @@ import { ManagerAuth } from "./ManagerAuth";
 import { useManagerAuth } from "@/hooks/use-manager-auth";
 import { 
   useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, 
-  useCreateProject, useGenerateMessage, useGenerateAiSummary,
+  useCreateProject, useGenerateMessage, useGenerateAiSummary, useUpdateProjectDocument,
   getGetMessagesQueryKey, getGetDashboardStatsQueryKey, getGetProjectsQueryKey 
 } from "@workspace/api-client-react";
+import { useUpload } from "@workspace/object-storage-web";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -288,6 +289,85 @@ function OverviewTab() {
   );
 }
 
+function ProjectDocumentUpload({ projectId, documentName, documentPath }: { projectId: number; documentName?: string | null; documentPath?: string | null }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const updateDocument = useUpdateProjectDocument();
+
+  const { uploadFile, isUploading, progress } = useUpload({
+    onSuccess: async (response) => {
+      try {
+        await updateDocument.mutateAsync({
+          id: projectId,
+          data: { documentPath: response.objectPath, documentName: response.metadata.name },
+        });
+        queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+        toast({ title: "Document attached!", description: response.metadata.name });
+      } catch {
+        toast({ title: "Failed to save document", variant: "destructive" });
+      }
+    },
+    onError: () => toast({ title: "Upload failed", variant: "destructive" }),
+  });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await uploadFile(file);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border/60">
+      {documentPath && documentName ? (
+        <div className="flex items-center gap-2 mb-2">
+          <Paperclip className="h-3.5 w-3.5 text-teal-600 shrink-0" />
+          <a
+            href={`/api/storage${documentPath}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-teal-700 hover:text-teal-900 underline underline-offset-2 truncate max-w-[160px]"
+            title={documentName}
+          >
+            {documentName}
+          </a>
+          <a href={`/api/storage${documentPath}`} download={documentName} className="ml-auto shrink-0">
+            <Download className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+          </a>
+        </div>
+      ) : null}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv"
+      />
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full gap-2 text-xs text-muted-foreground hover:text-foreground"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isUploading || updateDocument.isPending}
+      >
+        {isUploading || updateDocument.isPending ? (
+          <>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {isUploading ? `Uploading… ${progress}%` : "Saving…"}
+          </>
+        ) : (
+          <>
+            <FileUp className="h-3.5 w-3.5" />
+            {documentPath ? "Replace Document" : "Attach Document"}
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
 function ProjectsTab() {
   const { data, isLoading } = useGetProjects();
   const createMutation = useCreateProject();
@@ -380,6 +460,11 @@ function ProjectsTab() {
                 </div>
               </div>
               <Button variant="outline" className="w-full" size="sm">Edit Context</Button>
+              <ProjectDocumentUpload
+                projectId={project.id}
+                documentPath={project.documentPath}
+                documentName={project.documentName}
+              />
             </CardContent>
           </Card>
         ))}

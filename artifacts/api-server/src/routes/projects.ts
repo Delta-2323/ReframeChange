@@ -74,4 +74,27 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+router.patch("/:id/document", async (req, res) => {
+  try {
+    const { id } = GetProjectParams.parse({ id: Number(req.params.id) });
+    const { documentPath, documentName } = req.body as { documentPath: string; documentName: string };
+    if (!documentPath || !documentName) {
+      res.status(400).json({ error: "documentPath and documentName are required" });
+      return;
+    }
+    const [project] = await db.update(projectsTable)
+      .set({ documentPath, documentName, updatedAt: new Date() })
+      .where(eq(projectsTable.id, id))
+      .returning();
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    res.json(project);
+  } catch (error) {
+    console.error("Error updating project document:", error);
+    res.status(400).json({ error: "Invalid request" });
+  }
+});
+
 export default router;

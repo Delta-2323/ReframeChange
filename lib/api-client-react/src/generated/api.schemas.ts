@@ -74,6 +74,8 @@ export interface ProjectResponse {
   changeLogic?: string | null;
   changeStrategy?: string | null;
   managerName?: string | null;
+  documentPath?: string | null;
+  documentName?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -136,6 +138,20 @@ export interface SendEmailResponse {
   message: string;
 }
 
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
 export interface DashboardStats {
   totalSurveys: number;
   totalProjects: number;
@@ -150,6 +166,11 @@ export type GetSurveys200 = {
 
 export type GetProjects200 = {
   projects: ProjectResponse[];
+};
+
+export type UpdateProjectDocumentBody = {
+  documentPath: string;
+  documentName: string;
 };
 
 export type GetMessages200 = {
