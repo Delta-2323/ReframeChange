@@ -87,10 +87,28 @@ pnpm --filter @workspace/db run push
 pnpm --filter @workspace/api-spec run codegen
 ```
 
+## Email System
+
+Uses **Nodemailer + Gmail** (no third-party email service needed).
+
+Required environment variables:
+- `GMAIL_FROM_EMAIL` — the Gmail address to send from (set as env var: `somikun02@gmail.com`)
+- `GMAIL_APP_PASSWORD` — Gmail App Password (set as Replit Secret)
+
+To generate a Gmail App Password:
+1. Go to myaccount.google.com → Security
+2. Enable 2-Step Verification
+3. Search "App passwords" → Create one → Copy the 16-char code
+
+The email module is at `artifacts/api-server/src/lib/email.ts`.
+
+> Note: SendGrid and Resend integrations were dismissed by the user. Gmail/Nodemailer is the chosen solution.
+
 ## API Endpoints
 
 All prefixed with `/api/`:
-- `POST/GET /surveys` — survey submission and retrieval
+- `POST/GET /surveys` — survey submission and retrieval (includes `stakeholderEmail` field)
 - `POST/GET /projects` + `PUT /projects/:id` — project CRUD
 - `POST/GET /messages` + `PUT /messages/:id` — AI message management
+- `POST /messages/:id/send-email` — send approved message to stakeholder via Gmail
 - `GET /dashboard/stats` — analytics and mental model distribution

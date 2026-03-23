@@ -1,7 +1,20 @@
-import sgMail from "@sendgrid/mail";
+import nodemailer from "nodemailer";
 
-const apiKey = process.env.SENDGRID_API_KEY;
-const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? "noreply@reframechange.com";
+function createTransport() {
+  const user = process.env.GMAIL_FROM_EMAIL;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+
+  if (!user || !pass) {
+    throw new Error(
+      "Gmail credentials not configured. Please set GMAIL_FROM_EMAIL and GMAIL_APP_PASSWORD environment variables."
+    );
+  }
+
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+}
 
 export async function sendEmail(params: {
   to: string;
@@ -9,13 +22,10 @@ export async function sendEmail(params: {
   text: string;
   html: string;
 }): Promise<void> {
-  if (!apiKey) {
-    throw new Error("SENDGRID_API_KEY is not configured. Please add it as an environment secret.");
-  }
-  sgMail.setApiKey(apiKey);
-  await sgMail.send({
+  const transporter = createTransport();
+  await transporter.sendMail({
+    from: `"Reframe Change" <${process.env.GMAIL_FROM_EMAIL}>`,
     to: params.to,
-    from: fromEmail,
     subject: params.subject,
     text: params.text,
     html: params.html,
