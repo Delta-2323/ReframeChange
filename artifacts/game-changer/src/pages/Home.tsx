@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight, FlaskConical, Cog, Heart, Lightbulb, ClipboardList, UserSearch, Wand2, CheckCheck, Send } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
+import logoSrc from "@assets/image_1774396613393.png";
 
 const features = [
   {
@@ -287,10 +288,7 @@ export default function Home() {
       <footer className="border-t border-border bg-white py-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-white font-display font-bold text-xs">RC</span>
-            </div>
-            <span className="text-sm font-semibold text-muted-foreground">Reframe Change · REM16™</span>
+            <img src={logoSrc} alt="Reframe Change" className="h-6 w-auto" />
           </div>
           <p className="text-xs text-muted-foreground">
             Powered by organisational psychology and AI ·{" "}
