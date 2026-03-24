@@ -44,18 +44,20 @@ export function Navbar() {
               </Button>
             </Link>
 
-            <>
-              <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
-              <Link href="/manager">
-                <Button
-                  size="sm"
-                  className={`gap-2 text-sm font-medium hidden sm:flex ${isManager ? "bg-primary text-white shadow-sm" : "bg-transparent border border-primary/30 text-primary hover:bg-primary hover:text-white transition-colors"}`}
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Manager Portal
-                </Button>
-              </Link>
-            </>
+            {location !== "/" && (
+              <>
+                <div className="h-5 w-px bg-border mx-1 hidden sm:block" />
+                <Link href="/manager">
+                  <Button
+                    size="sm"
+                    className={`gap-2 text-sm font-medium hidden sm:flex ${isManager ? "bg-primary text-white shadow-sm" : "bg-transparent border border-primary/30 text-primary hover:bg-primary hover:text-white transition-colors"}`}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Manager Portal
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
