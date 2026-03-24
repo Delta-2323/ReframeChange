@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight, FlaskConical, Cog, Heart, Lightbulb, ClipboardList, UserSearch, Wand2, CheckCheck, Send, TrendingUp, AlertTriangle, Users, X } from "lucide-react";
+import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight, FlaskConical, Cog, Heart, Lightbulb, ClipboardList, UserSearch, Wand2, CheckCheck, Send } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 
@@ -102,57 +102,6 @@ export default function Home() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Why the REM model is necessary */}
-        <section className="py-20 md:py-24 bg-white">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="grid lg:grid-cols-2 gap-14 items-center">
-                <div>
-                  <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-4">The Problem</p>
-                  <h2 className="text-3xl md:text-4xl font-display font-bold text-primary mb-5 leading-tight">
-                    Most change fails because<br />people are not all the same.
-                  </h2>
-                  <p className="text-muted-foreground text-lg leading-relaxed mb-6">
-                    Research consistently shows that 70% of organisational change initiatives fail — and the root cause is rarely strategy or resources. It is people.
-                  </p>
-                  <p className="text-muted-foreground leading-relaxed mb-6">
-                    When organisations send the same message to every stakeholder, they are speaking the right words to the wrong people. A data-driven analyst who needs facts and figures reacts very differently to change than a relationship-focused team member who needs to feel heard and safe. A cautious behind-the-scenes supporter has completely different needs from a visible, enthusiastic leader.
-                  </p>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Without a structured way to understand these differences, change managers default to generic communication — which builds distrust, drives resistance, and ultimately derails the programme.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {[
-                    { icon: AlertTriangle, color: "bg-red-50 text-red-600 border-red-100", text: "One-size-fits-all messages land differently for every person — and most land badly." },
-                    { icon: Users, color: "bg-amber-50 text-amber-600 border-amber-100", text: "Resistance builds when people don't feel understood — not when they disagree with the change." },
-                    { icon: X, color: "bg-rose-50 text-rose-600 border-rose-100", text: "Without insight into individual mindsets, managers can't know who needs evidence, who needs reassurance, and who needs a bold vision." },
-                    { icon: TrendingUp, color: "bg-teal-50 text-teal-600 border-teal-100", text: "Tailored communication at scale is the proven lever for driving adoption — but it has always been too time-consuming to do manually." },
-                  ].map((item, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.35, delay: i * 0.08 }}
-                      className={`flex items-start gap-4 rounded-xl border p-5 ${item.color}`}
-                    >
-                      <item.icon className="h-5 w-5 shrink-0 mt-0.5" />
-                      <p className="text-sm leading-relaxed font-medium">{item.text}</p>
-                    </motion.div>
-                  ))}
-                </div>
               </div>
             </motion.div>
           </div>
