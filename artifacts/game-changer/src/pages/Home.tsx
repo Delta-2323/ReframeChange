@@ -311,7 +311,6 @@ export default function Home() {
                     <div className={`h-11 w-11 rounded-xl ${dim.iconBg} flex items-center justify-center mb-5`}>
                       <dim.icon className="h-5 w-5" />
                     </div>
-                    <p className="text-xs font-semibold uppercase tracking-widest mb-1 opacity-60">Dimension {i + 1}</p>
                     <h3 className="text-xl font-display font-bold mb-1">{dim.label}</h3>
                     <p className="text-sm opacity-70 mb-5">{dim.subtitle}</p>
                     <ul className="space-y-3">
