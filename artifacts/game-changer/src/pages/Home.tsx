@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight, FlaskConical, Cog, Heart, Lightbulb, Zap, Shield, ClipboardList, UserSearch, Wand2, CheckCheck, Send, TrendingUp, AlertTriangle, Users, X } from "lucide-react";
+import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight, FlaskConical, Cog, Heart, Lightbulb, ClipboardList, UserSearch, Wand2, CheckCheck, Send, TrendingUp, AlertTriangle, Users, X } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 
@@ -25,43 +25,6 @@ const features = [
   },
 ];
 
-const dimensions = [
-  {
-    icon: FlaskConical,
-    label: "Thinking Focus",
-    subtitle: "What drives their reasoning?",
-    color: "bg-violet-50 text-violet-700 border-violet-200",
-    iconBg: "bg-violet-100",
-    options: [
-      { name: "Proof", desc: "Motivated by data, evidence, and logical argument. Needs facts before acting." },
-      { name: "Process", desc: "Driven by structure, systems, and clear steps. Needs a solid plan to feel safe." },
-      { name: "People", desc: "Guided by relationships, culture, and team wellbeing. Needs human impact addressed." },
-      { name: "Possibility", desc: "Inspired by vision, innovation, and what could be. Needs a compelling future story." },
-    ],
-  },
-  {
-    icon: Zap,
-    label: "Orientation",
-    subtitle: "How do they approach change?",
-    color: "bg-amber-50 text-amber-700 border-amber-200",
-    iconBg: "bg-amber-100",
-    options: [
-      { name: "Eager", desc: "Open and energised — ready to engage with change and move forward quickly." },
-      { name: "Cautious", desc: "Risk-aware and measured — needs more information or reassurance before committing." },
-    ],
-  },
-  {
-    icon: Shield,
-    label: "Change Role",
-    subtitle: "How do they prefer to participate?",
-    color: "bg-teal-50 text-teal-700 border-teal-200",
-    iconBg: "bg-teal-100",
-    options: [
-      { name: "Rockstar", desc: "Visible and active — comfortable leading, influencing, and speaking out during change." },
-      { name: "Roadie", desc: "Behind the scenes — prefers to support, enable, and contribute quietly." },
-    ],
-  },
-];
 
 type ModelCard = { key: string; name: string; description: string; focus: string; orientation: string; role: string };
 
@@ -277,71 +240,6 @@ export default function Home() {
                   </motion.div>
                 ))}
               </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* How the framework works */}
-        <section className="py-20 md:py-24 bg-muted/30 border-y border-border">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="text-center mb-14">
-                <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-3">The REM16™ Framework</p>
-                <h2 className="text-3xl md:text-4xl font-display font-bold text-primary">Three questions. Sixteen insights.</h2>
-                <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-                  The REM16™ model maps every stakeholder to a unique psychological profile by understanding three fundamental dimensions of how they engage with change.
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                {dimensions.map((dim, i) => (
-                  <motion.div
-                    key={dim.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: i * 0.1 }}
-                    className={`rounded-2xl border p-7 ${dim.color}`}
-                  >
-                    <div className={`h-11 w-11 rounded-xl ${dim.iconBg} flex items-center justify-center mb-5`}>
-                      <dim.icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-xl font-display font-bold mb-1">{dim.label}</h3>
-                    <p className="text-sm opacity-70 mb-5">{dim.subtitle}</p>
-                    <ul className="space-y-3">
-                      {dim.options.map((opt) => (
-                        <li key={opt.name} className="flex items-start gap-3">
-                          <span className="mt-0.5 inline-flex h-5 w-5 rounded-full bg-white/60 border border-current/20 items-center justify-center shrink-0">
-                            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                          </span>
-                          <div>
-                            <span className="font-bold text-sm">{opt.name}:</span>{" "}
-                            <span className="text-sm opacity-75">{opt.desc}</span>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </motion.div>
-                ))}
-              </div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: 0.3 }}
-                className="mt-10 rounded-2xl bg-primary/5 border border-primary/15 p-6 text-center max-w-2xl mx-auto"
-              >
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  <span className="font-bold text-primary">4 Thinking Focuses × 2 Orientations × 2 Change Roles</span>
-                  {" "}= exactly <span className="font-bold text-primary">16 distinct mental models</span>, each with a tailored communication strategy.
-                </p>
-              </motion.div>
             </motion.div>
           </div>
         </section>
