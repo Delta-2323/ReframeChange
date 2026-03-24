@@ -13,7 +13,7 @@ import { ManagerAuth } from "./ManagerAuth";
 import { useManagerAuth } from "@/hooks/use-manager-auth";
 import { 
   useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, 
-  useCreateProject, useGenerateMessage, useGenerateAiSummary,
+  useCreateProject, useUpdateProject, useGenerateMessage, useGenerateAiSummary,
   getGetMessagesQueryKey, getGetDashboardStatsQueryKey, getGetProjectsQueryKey 
 } from "@workspace/api-client-react";
 
@@ -374,24 +374,85 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
   );
 }
 
+type ProjectFormData = { name: string; bcipCanvas: string; changeLogic: string; changeStrategy: string; managerName: string };
+const EMPTY_FORM: ProjectFormData = { name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '', managerName: '' };
+
+function ProjectForm({ formData, onChange }: { formData: ProjectFormData; onChange: (d: ProjectFormData) => void }) {
+  return (
+    <div className="space-y-4 py-4">
+      <div className="space-y-2">
+        <Label>Project Name *</Label>
+        <Input required value={formData.name} onChange={e => onChange({...formData, name: e.target.value})} placeholder="E.g. Q3 Digital Transformation" />
+      </div>
+      <div className="space-y-2">
+        <Label>Manager Name</Label>
+        <Input value={formData.managerName} onChange={e => onChange({...formData, managerName: e.target.value})} placeholder="John Smith" />
+      </div>
+      <div className="space-y-2">
+        <Label>BCIP Canvas (Context)</Label>
+        <Textarea rows={3} value={formData.bcipCanvas} onChange={e => onChange({...formData, bcipCanvas: e.target.value})} placeholder="Paste background context..." />
+      </div>
+      <div className="space-y-2">
+        <Label>Change Logic</Label>
+        <Textarea rows={3} value={formData.changeLogic} onChange={e => onChange({...formData, changeLogic: e.target.value})} placeholder="Why are we doing this?..." />
+      </div>
+      <div className="space-y-2">
+        <Label>Change Strategy</Label>
+        <Textarea rows={3} value={formData.changeStrategy} onChange={e => onChange({...formData, changeStrategy: e.target.value})} placeholder="How will we implement this?..." />
+      </div>
+    </div>
+  );
+}
+
 function ProjectsTab() {
   const { data, isLoading } = useGetProjects();
   const createMutation = useCreateProject();
+  const updateMutation = useUpdateProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '', managerName: '' });
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<ProjectFormData>(EMPTY_FORM);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editProjectId, setEditProjectId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<ProjectFormData>(EMPTY_FORM);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createMutation.mutateAsync({ data: formData });
+      await createMutation.mutateAsync({ data: createForm });
       toast({ title: "Project Created!" });
       queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
-      setOpen(false);
-      setFormData({ name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '', managerName: '' });
+      setCreateOpen(false);
+      setCreateForm(EMPTY_FORM);
     } catch {
       toast({ title: "Error creating project", variant: "destructive" });
+    }
+  };
+
+  const handleEditOpen = (project: { id: number; name: string; bcipCanvas?: string | null; changeLogic?: string | null; changeStrategy?: string | null; managerName?: string | null }) => {
+    setEditProjectId(project.id);
+    setEditForm({
+      name: project.name,
+      bcipCanvas: project.bcipCanvas ?? '',
+      changeLogic: project.changeLogic ?? '',
+      changeStrategy: project.changeStrategy ?? '',
+      managerName: project.managerName ?? '',
+    });
+    setEditOpen(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editProjectId) return;
+    try {
+      await updateMutation.mutateAsync({ id: editProjectId, data: editForm });
+      toast({ title: "Project Updated!" });
+      queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+      setEditOpen(false);
+    } catch {
+      toast({ title: "Error updating project", variant: "destructive" });
     }
   };
 
@@ -404,7 +465,7 @@ function ProjectsTab() {
           <h3 className="text-2xl font-bold">Active Projects</h3>
           <p className="text-muted-foreground">Manage context for organizational changes.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary"><Plus className="mr-2 h-4 w-4" /> New Project</Button>
           </DialogTrigger>
@@ -412,27 +473,8 @@ function ProjectsTab() {
             <DialogHeader>
               <DialogTitle>Create New Project Context</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Project Name *</Label>
-                <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="E.g. Q3 Digital Transformation" />
-              </div>
-              <div className="space-y-2">
-                <Label>Manager Name</Label>
-                <Input value={formData.managerName} onChange={e => setFormData({...formData, managerName: e.target.value})} placeholder="John Smith" />
-              </div>
-              <div className="space-y-2">
-                <Label>BCIP Canvas (Context)</Label>
-                <Textarea rows={3} value={formData.bcipCanvas} onChange={e => setFormData({...formData, bcipCanvas: e.target.value})} placeholder="Paste background context..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Change Logic</Label>
-                <Textarea rows={3} value={formData.changeLogic} onChange={e => setFormData({...formData, changeLogic: e.target.value})} placeholder="Why are we doing this?..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Change Strategy</Label>
-                <Textarea rows={3} value={formData.changeStrategy} onChange={e => setFormData({...formData, changeStrategy: e.target.value})} placeholder="How will we implement this?..." />
-              </div>
+            <form onSubmit={handleCreate}>
+              <ProjectForm formData={createForm} onChange={setCreateForm} />
               <DialogFooter>
                 <Button type="submit" disabled={createMutation.isPending}>
                   {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -443,6 +485,23 @@ function ProjectsTab() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Project Context</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdate}>
+            <ProjectForm formData={editForm} onChange={setEditForm} />
+            <DialogFooter>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {data?.projects.length === 0 && (
@@ -465,7 +524,9 @@ function ProjectsTab() {
                   {project.changeStrategy && <Badge variant="secondary" className="bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 border-0">Strategy</Badge>}
                 </div>
               </div>
-              <Button variant="outline" className="w-full" size="sm">Edit Context</Button>
+              <Button variant="outline" className="w-full" size="sm" onClick={() => handleEditOpen(project)}>
+                <Edit className="mr-2 h-3.5 w-3.5" /> Edit Context
+              </Button>
               <ProjectDocumentUpload
                 projectId={project.id}
                 documentName={project.documentName}
