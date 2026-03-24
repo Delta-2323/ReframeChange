@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight, FlaskConical, Cog, Heart, Lightbulb, Zap, Shield } from "lucide-react";
+import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight, FlaskConical, Cog, Heart, Lightbulb, Zap, Shield, ClipboardList, UserSearch, Wand2, CheckCheck, Send, TrendingUp, AlertTriangle, Users, X } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 
@@ -139,6 +139,106 @@ export default function Home() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Why the REM model is necessary */}
+        <section className="py-20 md:py-24 bg-white">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="grid lg:grid-cols-2 gap-14 items-center">
+                <div>
+                  <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-4">The Problem</p>
+                  <h2 className="text-3xl md:text-4xl font-display font-bold text-primary mb-5 leading-tight">
+                    Most change fails because<br />people are not all the same.
+                  </h2>
+                  <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+                    Research consistently shows that 70% of organisational change initiatives fail — and the root cause is rarely strategy or resources. It is people.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mb-6">
+                    When organisations send the same message to every stakeholder, they are speaking the right words to the wrong people. A data-driven analyst who needs facts and figures reacts very differently to change than a relationship-focused team member who needs to feel heard and safe. A cautious behind-the-scenes supporter has completely different needs from a visible, enthusiastic leader.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Without a structured way to understand these differences, change managers default to generic communication — which builds distrust, drives resistance, and ultimately derails the programme.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {[
+                    { icon: AlertTriangle, color: "bg-red-50 text-red-600 border-red-100", text: "One-size-fits-all messages land differently for every person — and most land badly." },
+                    { icon: Users, color: "bg-amber-50 text-amber-600 border-amber-100", text: "Resistance builds when people don't feel understood — not when they disagree with the change." },
+                    { icon: X, color: "bg-rose-50 text-rose-600 border-rose-100", text: "Without insight into individual mindsets, managers can't know who needs evidence, who needs reassurance, and who needs a bold vision." },
+                    { icon: TrendingUp, color: "bg-teal-50 text-teal-600 border-teal-100", text: "Tailored communication at scale is the proven lever for driving adoption — but it has always been too time-consuming to do manually." },
+                  ].map((item, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.35, delay: i * 0.08 }}
+                      className={`flex items-start gap-4 rounded-xl border p-5 ${item.color}`}
+                    >
+                      <item.icon className="h-5 w-5 shrink-0 mt-0.5" />
+                      <p className="text-sm leading-relaxed font-medium">{item.text}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* What Reframe Change actually does — step by step */}
+        <section className="py-20 md:py-24 bg-primary/3 border-y border-border">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="text-center mb-14">
+                <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-3">How Reframe Change Works</p>
+                <h2 className="text-3xl md:text-4xl font-display font-bold text-primary">From stakeholder to sent message — in minutes.</h2>
+                <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
+                  Reframe Change turns a 4-question survey into a personalised, psychologically informed communication — without the guesswork.
+                </p>
+              </div>
+
+              <div className="relative">
+                <div className="hidden md:block absolute top-9 left-[calc(10%+2.5rem)] right-[calc(10%+2.5rem)] h-px bg-border" />
+                <div className="grid md:grid-cols-5 gap-6 relative">
+                  {[
+                    { icon: ClipboardList, step: "01", label: "Stakeholder takes survey", desc: "A short 4-question survey identifies how each person thinks about and engages with change.", color: "bg-blue-50 text-blue-700" },
+                    { icon: UserSearch,    step: "02", label: "Mental model identified", desc: "The REM16™ framework maps their answers to one of 16 precise psychological archetypes.", color: "bg-violet-50 text-violet-700" },
+                    { icon: Wand2,         step: "03", label: "AI drafts the message", desc: "GPT generates a tailored communication written specifically for that person's mindset and role.", color: "bg-teal-50 text-teal-700" },
+                    { icon: CheckCheck,    step: "04", label: "Manager reviews & approves", desc: "You read, edit if needed, and approve the message before anything is sent.", color: "bg-amber-50 text-amber-700" },
+                    { icon: Send,          step: "05", label: "Message sent — tracked", desc: "The approved message is emailed directly to the stakeholder, logged, and included in your readiness dashboard.", color: "bg-rose-50 text-rose-700" },
+                  ].map((s, i) => (
+                    <motion.div
+                      key={s.step}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.35, delay: i * 0.09 }}
+                      className="flex flex-col items-center text-center relative"
+                    >
+                      <div className={`h-[4.5rem] w-[4.5rem] rounded-2xl ${s.color} flex items-center justify-center mb-5 ring-4 ring-white shadow-sm`}>
+                        <s.icon className="h-7 w-7" />
+                      </div>
+                      <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest mb-1">{s.step}</span>
+                      <h4 className="font-display font-bold text-foreground text-sm mb-2 leading-snug">{s.label}</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </motion.div>
           </div>
