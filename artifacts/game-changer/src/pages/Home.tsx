@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight } from "lucide-react";
+import { ArrowRight, BarChart3, Target, MessageSquare, ChevronRight, FlaskConical, Cog, Heart, Lightbulb, Zap, Shield } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +24,74 @@ const features = [
     color: "bg-indigo-50 text-indigo-700",
   },
 ];
+
+const dimensions = [
+  {
+    icon: FlaskConical,
+    label: "Thinking Focus",
+    subtitle: "What drives their reasoning?",
+    color: "bg-violet-50 text-violet-700 border-violet-200",
+    iconBg: "bg-violet-100",
+    options: [
+      { name: "Proof", desc: "Motivated by data, evidence, and logical argument. Needs facts before acting." },
+      { name: "Process", desc: "Driven by structure, systems, and clear steps. Needs a solid plan to feel safe." },
+      { name: "People", desc: "Guided by relationships, culture, and team wellbeing. Needs human impact addressed." },
+      { name: "Possibility", desc: "Inspired by vision, innovation, and what could be. Needs a compelling future story." },
+    ],
+  },
+  {
+    icon: Zap,
+    label: "Orientation",
+    subtitle: "How do they approach change?",
+    color: "bg-amber-50 text-amber-700 border-amber-200",
+    iconBg: "bg-amber-100",
+    options: [
+      { name: "Eager", desc: "Open and energised — ready to engage with change and move forward quickly." },
+      { name: "Cautious", desc: "Risk-aware and measured — needs more information or reassurance before committing." },
+    ],
+  },
+  {
+    icon: Shield,
+    label: "Change Role",
+    subtitle: "How do they prefer to participate?",
+    color: "bg-teal-50 text-teal-700 border-teal-200",
+    iconBg: "bg-teal-100",
+    options: [
+      { name: "Rockstar", desc: "Visible and active — comfortable leading, influencing, and speaking out during change." },
+      { name: "Roadie", desc: "Behind the scenes — prefers to support, enable, and contribute quietly." },
+    ],
+  },
+];
+
+type ModelCard = { key: string; name: string; description: string; focus: string; orientation: string; role: string };
+
+const models: ModelCard[] = [
+  { key: "Proof-Eager-Rockstar",         name: "The Champion Analyst",   description: "Champions change with evidence. Energetically communicates data-driven rationale and inspires others through logical argument.", focus: "Proof",       orientation: "Eager",    role: "Rockstar" },
+  { key: "Proof-Eager-Roadie",           name: "The Quiet Validator",    description: "Supports change by gathering and sharing evidence behind the scenes, building confidence in others through thorough research.", focus: "Proof",       orientation: "Eager",    role: "Roadie"   },
+  { key: "Proof-Cautious-Rockstar",      name: "The Sceptic",            description: "Asks the hard questions publicly. Needs solid evidence before committing — their visible scrutiny ensures the change is rigorous.", focus: "Proof",       orientation: "Cautious", role: "Rockstar" },
+  { key: "Proof-Cautious-Roadie",        name: "The Silent Doubter",     description: "Has reservations but expresses them quietly. Needs data and reassurance before fully committing to supporting the change.", focus: "Proof",       orientation: "Cautious", role: "Roadie"   },
+  { key: "Process-Eager-Rockstar",       name: "The Systems Builder",    description: "Champions change through structure. Visibly leads implementation of plans, processes, and governance frameworks.", focus: "Process",     orientation: "Eager",    role: "Rockstar" },
+  { key: "Process-Eager-Roadie",         name: "The Reliable Executor",  description: "Supports change by diligently following processes — the backbone of implementation: reliable, thorough, and consistent.", focus: "Process",     orientation: "Eager",    role: "Roadie"   },
+  { key: "Process-Cautious-Rockstar",    name: "The Risk Manager",       description: "Visibly advocates for careful, risk-aware change. Raises concerns about process gaps to help the team avoid costly mistakes.", focus: "Process",     orientation: "Cautious", role: "Rockstar" },
+  { key: "Process-Cautious-Roadie",      name: "The Resistant Follower", description: "Follows instructions but has serious concerns about planning. Needs clear processes and assurances before fully engaging.", focus: "Process",     orientation: "Cautious", role: "Roadie"   },
+  { key: "People-Eager-Rockstar",        name: "The Energiser",          description: "Brings emotional energy and enthusiasm. Visibly rallies people, builds morale, and creates community around the change journey.", focus: "People",      orientation: "Eager",    role: "Rockstar" },
+  { key: "People-Eager-Roadie",          name: "The Quiet Connector",    description: "Nurtures relationships behind the scenes. Listens, supports, and connects people informally — helping teams feel safe and supported.", focus: "People",      orientation: "Eager",    role: "Roadie"   },
+  { key: "People-Cautious-Rockstar",     name: "The Protector",          description: "Visibly advocates for team wellbeing during change. Cautious about human impact and ensures the cost of change is recognised.", focus: "People",      orientation: "Cautious", role: "Rockstar" },
+  { key: "People-Cautious-Roadie",       name: "The Concerned Observer", description: "Deeply worried about how change affects people, but expresses concerns quietly. Needs reassurance about wellbeing before engaging.", focus: "People",      orientation: "Cautious", role: "Roadie"   },
+  { key: "Possibility-Eager-Rockstar",   name: "The Creator",            description: "The visionary champion. Sees exciting possibilities and actively promotes a bold future, inspiring others with creativity and enthusiasm.", focus: "Possibility", orientation: "Eager",    role: "Rockstar" },
+  { key: "Possibility-Eager-Roadie",     name: "The Dreamer",            description: "Inspired by possibilities and supports change enthusiastically behind the scenes — generating ideas and creative solutions.", focus: "Possibility", orientation: "Eager",    role: "Roadie"   },
+  { key: "Possibility-Cautious-Rockstar",name: "The Critic",             description: "Sees the potential but is openly critical of execution. Challenges assumptions publicly and pushes for more ambitious approaches.", focus: "Possibility", orientation: "Cautious", role: "Rockstar" },
+  { key: "Possibility-Cautious-Roadie",  name: "The Hesitant Innovator", description: "Drawn to possibilities but holds back due to uncertainty. Needs the vision articulated more clearly before committing creative energy.", focus: "Possibility", orientation: "Cautious", role: "Roadie"   },
+];
+
+const focusGroups = ["Proof", "Process", "People", "Possibility"] as const;
+
+const focusMeta: Record<string, { color: string; badge: string; icon: React.ElementType }> = {
+  Proof:       { color: "border-violet-200 bg-violet-50/60",  badge: "bg-violet-100 text-violet-700",  icon: FlaskConical },
+  Process:     { color: "border-blue-200 bg-blue-50/60",      badge: "bg-blue-100 text-blue-700",      icon: Cog          },
+  People:      { color: "border-rose-200 bg-rose-50/60",      badge: "bg-rose-100 text-rose-700",      icon: Heart        },
+  Possibility: { color: "border-amber-200 bg-amber-50/60",    badge: "bg-amber-100 text-amber-700",    icon: Lightbulb    },
+};
 
 export default function Home() {
   return (
@@ -76,7 +144,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* How it works */}
+        {/* Why Reframe Change */}
         <section className="py-20 md:py-24 bg-white">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -113,13 +181,144 @@ export default function Home() {
           </div>
         </section>
 
+        {/* How the framework works */}
+        <section className="py-20 md:py-24 bg-muted/30 border-y border-border">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="text-center mb-14">
+                <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-3">The REM16™ Framework</p>
+                <h2 className="text-3xl md:text-4xl font-display font-bold text-primary">Three questions. Sixteen insights.</h2>
+                <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
+                  The REM16™ model maps every stakeholder to a unique psychological profile by understanding three fundamental dimensions of how they engage with change.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                {dimensions.map((dim, i) => (
+                  <motion.div
+                    key={dim.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: i * 0.1 }}
+                    className={`rounded-2xl border p-7 ${dim.color}`}
+                  >
+                    <div className={`h-11 w-11 rounded-xl ${dim.iconBg} flex items-center justify-center mb-5`}>
+                      <dim.icon className="h-5 w-5" />
+                    </div>
+                    <p className="text-xs font-semibold uppercase tracking-widest mb-1 opacity-60">Dimension {i + 1}</p>
+                    <h3 className="text-xl font-display font-bold mb-1">{dim.label}</h3>
+                    <p className="text-sm opacity-70 mb-5">{dim.subtitle}</p>
+                    <ul className="space-y-3">
+                      {dim.options.map((opt) => (
+                        <li key={opt.name} className="flex items-start gap-3">
+                          <span className="mt-0.5 inline-flex h-5 w-5 rounded-full bg-white/60 border border-current/20 items-center justify-center shrink-0">
+                            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                          </span>
+                          <div>
+                            <span className="font-bold text-sm">{opt.name}:</span>{" "}
+                            <span className="text-sm opacity-75">{opt.desc}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                ))}
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="mt-10 rounded-2xl bg-primary/5 border border-primary/15 p-6 text-center max-w-2xl mx-auto"
+              >
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  <span className="font-bold text-primary">4 Thinking Focuses × 2 Orientations × 2 Change Roles</span>
+                  {" "}= exactly <span className="font-bold text-primary">16 distinct mental models</span>, each with a tailored communication strategy.
+                </p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* The 16 Models */}
+        <section className="py-20 md:py-28 bg-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="text-center mb-14">
+                <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-3">All 16 Archetypes</p>
+                <h2 className="text-3xl md:text-4xl font-display font-bold text-primary">Which one are you?</h2>
+                <p className="mt-4 text-muted-foreground text-lg max-w-xl mx-auto">
+                  Every person on your team fits one of these profiles. Understanding them is the first step to communicating effectively.
+                </p>
+              </div>
+
+              <div className="space-y-10">
+                {focusGroups.map((focus, gi) => {
+                  const meta = focusMeta[focus];
+                  const FocusIcon = meta.icon;
+                  const groupModels = models.filter((m) => m.focus === focus);
+                  return (
+                    <motion.div
+                      key={focus}
+                      initial={{ opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.4, delay: gi * 0.08 }}
+                    >
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${meta.badge}`}>
+                          <FocusIcon className="h-4.5 w-4.5" />
+                        </div>
+                        <div>
+                          <h3 className="font-display font-bold text-lg text-foreground leading-tight">{focus} Thinkers</h3>
+                          <p className="text-xs text-muted-foreground">4 archetypes — driven by {focus.toLowerCase()}</p>
+                        </div>
+                      </div>
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {groupModels.map((model) => (
+                          <div
+                            key={model.key}
+                            className={`rounded-xl border p-5 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${meta.color}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-display font-bold text-sm leading-snug text-foreground">{model.name}</h4>
+                            </div>
+                            <div className="flex gap-1.5 flex-wrap">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge}`}>{model.orientation}</span>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge} opacity-75`}>{model.role}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed flex-1">{model.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* CTA */}
         <section className="py-16 md:py-20 bg-primary">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
             >
               <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
                 Ready to understand your stakeholders?

@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 import { 
   Users, Briefcase, FileText, CheckCircle, Plus, Edit, Send, Loader2, Sparkles, MessageSquare, LogOut,
-  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight, Paperclip, Download, FileUp
+  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight, Paperclip, Download, FileUp, Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -293,6 +293,7 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -321,15 +322,26 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
     }
   };
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/document`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to remove document");
+      await queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+      toast({ title: "Document removed" });
+    } catch (err) {
+      toast({ title: "Remove failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="mt-3 pt-3 border-t border-border/60">
       {documentName ? (
         <div className="flex items-center gap-2 mb-2">
           <Paperclip className="h-3.5 w-3.5 text-teal-600 shrink-0" />
-          <span
-            className="text-xs text-teal-700 truncate max-w-[160px]"
-            title={documentName}
-          >
+          <span className="text-xs text-teal-700 truncate max-w-[140px]" title={documentName}>
             {documentName}
           </span>
           <a
@@ -340,6 +352,14 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
           >
             <Download className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
           </a>
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            title="Remove document"
+            className="shrink-0 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+          >
+            {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+          </button>
         </div>
       ) : null}
 
@@ -356,7 +376,7 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
         size="sm"
         className="w-full gap-2 text-xs text-muted-foreground hover:text-foreground"
         onClick={() => fileInputRef.current?.click()}
-        disabled={isUploading}
+        disabled={isUploading || isDeleting}
       >
         {isUploading ? (
           <>

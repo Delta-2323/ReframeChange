@@ -98,6 +98,24 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+router.delete("/:id/document", async (req, res) => {
+  try {
+    const { id } = GetProjectParams.parse({ id: Number(req.params.id) });
+    const [project] = await db.update(projectsTable)
+      .set({ documentName: null, documentMimeType: null, documentData: null, updatedAt: new Date() })
+      .where(eq(projectsTable.id, id))
+      .returning({ id: projectsTable.id, name: projectsTable.name, documentName: projectsTable.documentName, updatedAt: projectsTable.updatedAt });
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    res.json(project);
+  } catch (error) {
+    console.error("Error removing document:", error);
+    res.status(500).json({ error: "Failed to remove document" });
+  }
+});
+
 router.post("/:id/document", upload.single("file"), async (req, res) => {
   try {
     const { id } = GetProjectParams.parse({ id: Number(req.params.id) });
