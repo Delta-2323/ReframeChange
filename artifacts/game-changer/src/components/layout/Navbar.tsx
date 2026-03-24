@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, ClipboardList, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logoSrc from "@assets/image_1774396613393.png";
 
 export function Navbar() {
   const [location] = useLocation();
@@ -14,7 +13,10 @@ export function Navbar() {
         <div className="flex h-15 items-center justify-between" style={{ height: '60px' }}>
           {/* Logo */}
           <Link href="/" className="flex items-center group">
-            <img src={logoSrc} alt="Reframe Change" className="h-9 w-auto" />
+            <div className="bg-black px-3 py-1.5 leading-none">
+              <div className="text-white font-display font-black text-[11px] tracking-[0.15em] uppercase">Reframe</div>
+              <div className="text-white font-display font-black text-[11px] tracking-[0.15em] uppercase">Change</div>
+            </div>
           </Link>
 
           {/* Nav links */}
