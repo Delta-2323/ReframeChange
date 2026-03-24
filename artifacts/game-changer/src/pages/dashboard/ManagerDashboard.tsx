@@ -13,10 +13,9 @@ import { ManagerAuth } from "./ManagerAuth";
 import { useManagerAuth } from "@/hooks/use-manager-auth";
 import { 
   useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, 
-  useCreateProject, useGenerateMessage, useGenerateAiSummary, useUpdateProjectDocument,
+  useCreateProject, useGenerateMessage, useGenerateAiSummary,
   getGetMessagesQueryKey, getGetDashboardStatsQueryKey, getGetProjectsQueryKey 
 } from "@workspace/api-client-react";
-import { useUpload } from "@workspace/object-storage-web";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -289,49 +288,56 @@ function OverviewTab() {
   );
 }
 
-function ProjectDocumentUpload({ projectId, documentName, documentPath }: { projectId: number; documentName?: string | null; documentPath?: string | null }) {
+function ProjectDocumentUpload({ projectId, documentName }: { projectId: number; documentName?: string | null }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const updateDocument = useUpdateProjectDocument();
-
-  const { uploadFile, isUploading, progress } = useUpload({
-    onSuccess: async (response) => {
-      try {
-        await updateDocument.mutateAsync({
-          id: projectId,
-          data: { documentPath: response.objectPath, documentName: response.metadata.name },
-        });
-        queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
-        toast({ title: "Document attached!", description: response.metadata.name });
-      } catch {
-        toast({ title: "Failed to save document", variant: "destructive" });
-      }
-    },
-    onError: () => toast({ title: "Upload failed", variant: "destructive" }),
-  });
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) await uploadFile(file);
+    if (!file) return;
     e.target.value = "";
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsUploading(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/document`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Upload failed");
+      }
+      await queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+      toast({ title: "Document attached!", description: file.name });
+    } catch (err) {
+      toast({ title: "Upload failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
     <div className="mt-3 pt-3 border-t border-border/60">
-      {documentPath && documentName ? (
+      {documentName ? (
         <div className="flex items-center gap-2 mb-2">
           <Paperclip className="h-3.5 w-3.5 text-teal-600 shrink-0" />
-          <a
-            href={`/api/storage${documentPath}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-teal-700 hover:text-teal-900 underline underline-offset-2 truncate max-w-[160px]"
+          <span
+            className="text-xs text-teal-700 truncate max-w-[160px]"
             title={documentName}
           >
             {documentName}
-          </a>
-          <a href={`/api/storage${documentPath}`} download={documentName} className="ml-auto shrink-0">
+          </span>
+          <a
+            href={`/api/projects/${projectId}/document`}
+            download={documentName}
+            className="ml-auto shrink-0"
+            title="Download document"
+          >
             <Download className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
           </a>
         </div>
@@ -350,17 +356,17 @@ function ProjectDocumentUpload({ projectId, documentName, documentPath }: { proj
         size="sm"
         className="w-full gap-2 text-xs text-muted-foreground hover:text-foreground"
         onClick={() => fileInputRef.current?.click()}
-        disabled={isUploading || updateDocument.isPending}
+        disabled={isUploading}
       >
-        {isUploading || updateDocument.isPending ? (
+        {isUploading ? (
           <>
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {isUploading ? `Uploading… ${progress}%` : "Saving…"}
+            Uploading…
           </>
         ) : (
           <>
             <FileUp className="h-3.5 w-3.5" />
-            {documentPath ? "Replace Document" : "Attach Document"}
+            {documentName ? "Replace Document" : "Attach Document"}
           </>
         )}
       </Button>
@@ -462,7 +468,6 @@ function ProjectsTab() {
               <Button variant="outline" className="w-full" size="sm">Edit Context</Button>
               <ProjectDocumentUpload
                 projectId={project.id}
-                documentPath={project.documentPath}
                 documentName={project.documentName}
               />
             </CardContent>

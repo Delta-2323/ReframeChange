@@ -74,8 +74,8 @@ export interface ProjectResponse {
   changeLogic?: string | null;
   changeStrategy?: string | null;
   managerName?: string | null;
-  documentPath?: string | null;
   documentName?: string | null;
+  documentMimeType?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -166,11 +166,6 @@ export type GetSurveys200 = {
 
 export type GetProjects200 = {
   projects: ProjectResponse[];
-};
-
-export type UpdateProjectDocumentBody = {
-  documentPath: string;
-  documentName: string;
 };
 
 export type GetMessages200 = {

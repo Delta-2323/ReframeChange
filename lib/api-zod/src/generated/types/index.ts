@@ -27,6 +27,5 @@ export * from "./surveyInputThinkingFocus";
 export * from "./surveyResponse";
 export * from "./updateMessageInput";
 export * from "./updateMessageInputStatus";
-export * from "./updateProjectDocumentBody";
 export * from "./uploadUrlRequest";
 export * from "./uploadUrlResponse";

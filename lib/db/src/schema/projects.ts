@@ -9,8 +9,9 @@ export const projectsTable = pgTable("projects", {
   changeLogic: text("change_logic"),
   changeStrategy: text("change_strategy"),
   managerName: text("manager_name"),
-  documentPath: text("document_path"),
   documentName: text("document_name"),
+  documentMimeType: text("document_mime_type"),
+  documentData: text("document_data"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

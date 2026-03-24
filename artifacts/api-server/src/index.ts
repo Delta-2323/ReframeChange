@@ -13,6 +13,12 @@ async function runMigrations() {
     await client.query(`
       ALTER TABLE surveys
         ADD COLUMN IF NOT EXISTS stakeholder_email TEXT NOT NULL DEFAULT 'unknown@example.com';
+      ALTER TABLE projects
+        ADD COLUMN IF NOT EXISTS document_name TEXT;
+      ALTER TABLE projects
+        ADD COLUMN IF NOT EXISTS document_mime_type TEXT;
+      ALTER TABLE projects
+        ADD COLUMN IF NOT EXISTS document_data TEXT;
     `);
     console.log("Migrations complete.");
   } finally {

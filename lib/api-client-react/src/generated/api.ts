@@ -33,7 +33,6 @@ import type {
   SurveyInput,
   SurveyResponse,
   UpdateMessageInput,
-  UpdateProjectDocumentBody,
   UploadUrlRequest,
   UploadUrlResponse,
 } from "./api.schemas";
@@ -701,94 +700,6 @@ export const useUpdateProject = <
   TContext
 > => {
   return useMutation(getUpdateProjectMutationOptions(options));
-};
-
-/**
- * @summary Attach an uploaded document to a project
- */
-export const getUpdateProjectDocumentUrl = (id: number) => {
-  return `/api/projects/${id}/document`;
-};
-
-export const updateProjectDocument = async (
-  id: number,
-  updateProjectDocumentBody: UpdateProjectDocumentBody,
-  options?: RequestInit,
-): Promise<ProjectResponse> => {
-  return customFetch<ProjectResponse>(getUpdateProjectDocumentUrl(id), {
-    ...options,
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(updateProjectDocumentBody),
-  });
-};
-
-export const getUpdateProjectDocumentMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updateProjectDocument>>,
-    TError,
-    { id: number; data: BodyType<UpdateProjectDocumentBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof updateProjectDocument>>,
-  TError,
-  { id: number; data: BodyType<UpdateProjectDocumentBody> },
-  TContext
-> => {
-  const mutationKey = ["updateProjectDocument"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof updateProjectDocument>>,
-    { id: number; data: BodyType<UpdateProjectDocumentBody> }
-  > = (props) => {
-    const { id, data } = props ?? {};
-
-    return updateProjectDocument(id, data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UpdateProjectDocumentMutationResult = NonNullable<
-  Awaited<ReturnType<typeof updateProjectDocument>>
->;
-export type UpdateProjectDocumentMutationBody =
-  BodyType<UpdateProjectDocumentBody>;
-export type UpdateProjectDocumentMutationError = ErrorType<void>;
-
-/**
- * @summary Attach an uploaded document to a project
- */
-export const useUpdateProjectDocument = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updateProjectDocument>>,
-    TError,
-    { id: number; data: BodyType<UpdateProjectDocumentBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof updateProjectDocument>>,
-  TError,
-  { id: number; data: BodyType<UpdateProjectDocumentBody> },
-  TContext
-> => {
-  return useMutation(getUpdateProjectDocumentMutationOptions(options));
 };
 
 /**

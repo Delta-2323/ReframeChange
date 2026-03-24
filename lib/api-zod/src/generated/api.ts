@@ -92,8 +92,8 @@ export const GetProjectsResponse = zod.object({
       changeLogic: zod.string().nullish(),
       changeStrategy: zod.string().nullish(),
       managerName: zod.string().nullish(),
-      documentPath: zod.string().nullish(),
       documentName: zod.string().nullish(),
+      documentMimeType: zod.string().nullish(),
       createdAt: zod.date(),
       updatedAt: zod.date(),
     }),
@@ -114,8 +114,8 @@ export const GetProjectResponse = zod.object({
   changeLogic: zod.string().nullish(),
   changeStrategy: zod.string().nullish(),
   managerName: zod.string().nullish(),
-  documentPath: zod.string().nullish(),
   documentName: zod.string().nullish(),
+  documentMimeType: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });
@@ -142,33 +142,8 @@ export const UpdateProjectResponse = zod.object({
   changeLogic: zod.string().nullish(),
   changeStrategy: zod.string().nullish(),
   managerName: zod.string().nullish(),
-  documentPath: zod.string().nullish(),
   documentName: zod.string().nullish(),
-  createdAt: zod.date(),
-  updatedAt: zod.date(),
-});
-
-/**
- * @summary Attach an uploaded document to a project
- */
-export const UpdateProjectDocumentParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const UpdateProjectDocumentBody = zod.object({
-  documentPath: zod.string(),
-  documentName: zod.string(),
-});
-
-export const UpdateProjectDocumentResponse = zod.object({
-  id: zod.number(),
-  name: zod.string(),
-  bcipCanvas: zod.string().nullish(),
-  changeLogic: zod.string().nullish(),
-  changeStrategy: zod.string().nullish(),
-  managerName: zod.string().nullish(),
-  documentPath: zod.string().nullish(),
-  documentName: zod.string().nullish(),
+  documentMimeType: zod.string().nullish(),
   createdAt: zod.date(),
   updatedAt: zod.date(),
 });

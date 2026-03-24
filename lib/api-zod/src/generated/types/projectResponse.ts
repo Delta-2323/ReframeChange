@@ -13,8 +13,8 @@ export interface ProjectResponse {
   changeLogic?: string | null;
   changeStrategy?: string | null;
   managerName?: string | null;
-  documentPath?: string | null;
   documentName?: string | null;
+  documentMimeType?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -170,39 +170,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProjectResponse"
 
-  /projects/{id}/document:
-    patch:
-      operationId: updateProjectDocument
-      tags: [projects]
-      summary: Attach an uploaded document to a project
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [documentPath, documentName]
-              properties:
-                documentPath:
-                  type: string
-                documentName:
-                  type: string
-      responses:
-        "200":
-          description: Document attached
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProjectResponse"
-        "404":
-          description: Project not found
-
   /storage/uploads/request-url:
     post:
       tags: [storage]
@@ -487,10 +454,10 @@ components:
         managerName:
           type: string
           nullable: true
-        documentPath:
+        documentName:
           type: string
           nullable: true
-        documentName:
+        documentMimeType:
           type: string
           nullable: true
         createdAt:
