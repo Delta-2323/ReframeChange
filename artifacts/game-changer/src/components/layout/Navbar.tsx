@@ -15,7 +15,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center group">
             <div className="bg-black px-3 py-1.5 leading-none">
               <div className="text-white font-display font-black text-[11px] tracking-[0.15em] uppercase">Reframe</div>
-              <div className="text-white font-display font-black text-[11px] tracking-[0.15em] uppercase">Change</div>
+              <div className="text-white font-display font-black text-[11px] tracking-[0.15em] uppercase rotate-180">Change</div>
             </div>
           </Link>
 

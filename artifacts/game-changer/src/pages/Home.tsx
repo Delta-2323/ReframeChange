@@ -288,7 +288,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="bg-black px-2.5 py-1 leading-none">
             <div className="text-white font-display font-black text-[9px] tracking-[0.15em] uppercase">Reframe</div>
-            <div className="text-white font-display font-black text-[9px] tracking-[0.15em] uppercase">Change</div>
+            <div className="text-white font-display font-black text-[9px] tracking-[0.15em] uppercase rotate-180">Change</div>
           </div>
           <p className="text-xs text-muted-foreground">
             Powered by organisational psychology and AI ·{" "}
