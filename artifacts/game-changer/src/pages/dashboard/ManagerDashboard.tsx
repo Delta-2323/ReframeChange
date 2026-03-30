@@ -403,8 +403,14 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
   );
 }
 
-type ProjectFormData = { name: string; bcipCanvas: string; changeLogic: string; changeStrategy: string; managerName: string; file: File | null };
-const EMPTY_FORM: ProjectFormData = { name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '', managerName: '', file: null };
+type ProjectFormData = {
+  name: string; bcipCanvas: string; changeLogic: string; changeStrategy: string; managerName: string;
+  bcipFile: File | null; logicFile: File | null; strategyFile: File | null;
+};
+const EMPTY_FORM: ProjectFormData = {
+  name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '', managerName: '',
+  bcipFile: null, logicFile: null, strategyFile: null,
+};
 
 const ALLOWED_FILE_TYPES = [
   "application/pdf",
@@ -413,34 +419,68 @@ const ALLOWED_FILE_TYPES = [
 ];
 const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx"];
 const MAX_FILE_SIZE_MB = 10;
+const FILE_ACCEPT = ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function validateFile(file: File, toast: ReturnType<typeof useToast>["toast"]): boolean {
+  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(ext) && !ALLOWED_FILE_TYPES.includes(file.type)) {
+    toast({ title: "Invalid file type", description: "Please select a PDF or Word document (.pdf, .doc, .docx).", variant: "destructive" });
+    return false;
+  }
+  if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    toast({ title: "File too large", description: `Maximum file size is ${MAX_FILE_SIZE_MB} MB.`, variant: "destructive" });
+    return false;
+  }
+  return true;
+}
+
+function InlineFileUpload({ file, onSelect, onRemove }: { file: File | null; onSelect: (f: File) => void; onRemove: () => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        accept={FILE_ACCEPT}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onSelect(f);
+          e.target.value = "";
+        }}
+      />
+      {file ? (
+        <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 mt-1.5">
+          <Paperclip className="h-3.5 w-3.5 text-teal-600 shrink-0" />
+          <span className="text-xs truncate flex-1" title={file.name}>{file.name}</span>
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            {(file.size / 1024 / 1024).toFixed(1)} MB
+          </span>
+          <button type="button" onClick={onRemove} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors" title="Remove file">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1.5"
+          onClick={() => inputRef.current?.click()}
+        >
+          <FileUp className="h-3.5 w-3.5" />
+          Upload PDF or Word document
+        </button>
+      )}
+    </>
+  );
+}
 
 function ProjectForm({ formData, onChange }: { formData: ProjectFormData; onChange: (d: ProjectFormData) => void }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    if (!file) return;
-
-    const ext = "." + file.name.split(".").pop()?.toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(ext) && !ALLOWED_FILE_TYPES.includes(file.type)) {
-      toast({ title: "Invalid file type", description: "Please select a PDF or Word document (.pdf, .doc, .docx).", variant: "destructive" });
-      e.target.value = "";
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      toast({ title: "File too large", description: `Maximum file size is ${MAX_FILE_SIZE_MB} MB.`, variant: "destructive" });
-      e.target.value = "";
-      return;
-    }
-
-    onChange({ ...formData, file });
-  };
-
-  const handleRemoveFile = () => {
-    onChange({ ...formData, file: null });
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const handleFieldFile = (field: "bcipFile" | "logicFile" | "strategyFile", file: File) => {
+    if (!validateFile(file, toast)) return;
+    onChange({ ...formData, [field]: file });
   };
 
   return (
@@ -456,51 +496,29 @@ function ProjectForm({ formData, onChange }: { formData: ProjectFormData; onChan
       <div className="space-y-2">
         <Label>BCIP Canvas (Context)</Label>
         <Textarea rows={3} value={formData.bcipCanvas} onChange={e => onChange({...formData, bcipCanvas: e.target.value})} placeholder="Paste background context..." />
+        <InlineFileUpload
+          file={formData.bcipFile}
+          onSelect={(f) => handleFieldFile("bcipFile", f)}
+          onRemove={() => onChange({ ...formData, bcipFile: null })}
+        />
       </div>
       <div className="space-y-2">
         <Label>Change Logic</Label>
         <Textarea rows={3} value={formData.changeLogic} onChange={e => onChange({...formData, changeLogic: e.target.value})} placeholder="Why are we doing this?..." />
+        <InlineFileUpload
+          file={formData.logicFile}
+          onSelect={(f) => handleFieldFile("logicFile", f)}
+          onRemove={() => onChange({ ...formData, logicFile: null })}
+        />
       </div>
       <div className="space-y-2">
         <Label>Change Strategy</Label>
         <Textarea rows={3} value={formData.changeStrategy} onChange={e => onChange({...formData, changeStrategy: e.target.value})} placeholder="How will we implement this?..." />
-      </div>
-      <div className="space-y-2">
-        <Label>Attach Document (PDF or Word)</Label>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          onChange={handleFileSelect}
+        <InlineFileUpload
+          file={formData.strategyFile}
+          onSelect={(f) => handleFieldFile("strategyFile", f)}
+          onRemove={() => onChange({ ...formData, strategyFile: null })}
         />
-        {formData.file ? (
-          <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
-            <Paperclip className="h-4 w-4 text-teal-600 shrink-0" />
-            <span className="text-sm truncate flex-1" title={formData.file.name}>{formData.file.name}</span>
-            <span className="text-xs text-muted-foreground shrink-0">
-              {(formData.file.size / 1024 / 1024).toFixed(1)} MB
-            </span>
-            <button
-              type="button"
-              onClick={handleRemoveFile}
-              className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-              title="Remove file"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full gap-2 border-dashed"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <FileUp className="h-4 w-4" />
-            Choose PDF or Word file
-          </Button>
-        )}
       </div>
     </div>
   );
@@ -521,19 +539,34 @@ function ProjectsTab() {
   const [editProjectId, setEditProjectId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<ProjectFormData>(EMPTY_FORM);
 
+  const uploadFieldFiles = async (projectId: number, form: ProjectFormData) => {
+    const uploads: { field: "bcip" | "logic" | "strategy"; file: File }[] = [];
+    if (form.bcipFile) uploads.push({ field: "bcip", file: form.bcipFile });
+    if (form.logicFile) uploads.push({ field: "logic", file: form.logicFile });
+    if (form.strategyFile) uploads.push({ field: "strategy", file: form.strategyFile });
+
+    const failed: string[] = [];
+    for (const { field, file } of uploads) {
+      try {
+        await projectService.uploadFieldDocument(projectId, field, file);
+      } catch {
+        failed.push(file.name);
+      }
+    }
+    return { total: uploads.length, failed };
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const { file, ...formFields } = createForm;
+      const { bcipFile, logicFile, strategyFile, ...formFields } = createForm;
       const project = await createMutation.mutateAsync(formFields);
-      if (file) {
-        try {
-          await projectService.uploadDocument(project.id, file);
-          toast({ title: "Project Created!", description: `Document "${file.name}" attached.` });
-        } catch {
-          toast({ title: "Project created, but document upload failed", description: "You can attach the document later from the project card.", variant: "destructive" });
-        }
+      const { total, failed } = await uploadFieldFiles(project.id, createForm);
+      if (failed.length > 0) {
+        toast({ title: "Project created, but some uploads failed", description: `Failed: ${failed.join(", ")}. You can re-upload from the project card.`, variant: "destructive" });
+      } else if (total > 0) {
+        toast({ title: "Project Created!", description: `${total} document${total > 1 ? "s" : ""} attached.` });
       } else {
         toast({ title: "Project Created!" });
       }
@@ -555,7 +588,7 @@ function ProjectsTab() {
       changeLogic: project.changeLogic ?? '',
       changeStrategy: project.changeStrategy ?? '',
       managerName: project.managerName ?? '',
-      file: null,
+      bcipFile: null, logicFile: null, strategyFile: null,
     });
     setEditOpen(true);
   };
@@ -565,15 +598,13 @@ function ProjectsTab() {
     if (!editProjectId) return;
     setIsSubmitting(true);
     try {
-      const { file, ...formFields } = editForm;
+      const { bcipFile, logicFile, strategyFile, ...formFields } = editForm;
       await updateMutation.mutateAsync({ id: editProjectId, data: formFields });
-      if (file) {
-        try {
-          await projectService.uploadDocument(editProjectId, file);
-          toast({ title: "Project Updated!", description: `Document "${file.name}" attached.` });
-        } catch {
-          toast({ title: "Project updated, but document upload failed", description: "You can attach the document later from the project card.", variant: "destructive" });
-        }
+      const { total, failed } = await uploadFieldFiles(editProjectId, editForm);
+      if (failed.length > 0) {
+        toast({ title: "Project updated, but some uploads failed", description: `Failed: ${failed.join(", ")}. You can re-upload from the project card.`, variant: "destructive" });
+      } else if (total > 0) {
+        toast({ title: "Project Updated!", description: `${total} document${total > 1 ? "s" : ""} attached.` });
       } else {
         toast({ title: "Project Updated!" });
       }
@@ -649,9 +680,9 @@ function ProjectsTab() {
               <div className="text-sm text-muted-foreground mb-4 space-y-1">
                 <p>Created: {format(new Date(project.createdAt), 'MMM d, yyyy')}</p>
                 <div className="flex gap-2 mt-2 flex-wrap">
-                  {project.bcipCanvas && <Badge variant="secondary" className="bg-secondary/10 text-secondary hover:bg-secondary/20 border-0">BCIP</Badge>}
-                  {project.changeLogic && <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-0">Logic</Badge>}
-                  {project.changeStrategy && <Badge variant="secondary" className="bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 border-0">Strategy</Badge>}
+                  {(project.bcipCanvas || project.bcipDocName) && <Badge variant="secondary" className="bg-secondary/10 text-secondary hover:bg-secondary/20 border-0">{project.bcipDocName ? <><Paperclip className="h-3 w-3 mr-0.5" />BCIP</> : "BCIP"}</Badge>}
+                  {(project.changeLogic || project.logicDocName) && <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-0">{project.logicDocName ? <><Paperclip className="h-3 w-3 mr-0.5" />Logic</> : "Logic"}</Badge>}
+                  {(project.changeStrategy || project.strategyDocName) && <Badge variant="secondary" className="bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 border-0">{project.strategyDocName ? <><Paperclip className="h-3 w-3 mr-0.5" />Strategy</> : "Strategy"}</Badge>}
                 </div>
               </div>
               <Button variant="outline" className="w-full" size="sm" onClick={() => handleEditOpen(project)}>

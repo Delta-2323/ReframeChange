@@ -24,6 +24,12 @@ export type Project = {
   manager_name: string | null;
   document_name: string | null;
   document_mime_type: string | null;
+  bcip_doc_name: string | null;
+  bcip_doc_path: string | null;
+  logic_doc_name: string | null;
+  logic_doc_path: string | null;
+  strategy_doc_name: string | null;
+  strategy_doc_path: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -75,6 +81,12 @@ function toCamelProject(p: Project) {
     managerName: p.manager_name,
     documentName: p.document_name,
     documentMimeType: p.document_mime_type,
+    bcipDocName: p.bcip_doc_name,
+    bcipDocPath: p.bcip_doc_path,
+    logicDocName: p.logic_doc_name,
+    logicDocPath: p.logic_doc_path,
+    strategyDocName: p.strategy_doc_name,
+    strategyDocPath: p.strategy_doc_path,
     createdAt: p.created_at,
     updatedAt: p.updated_at,
   };
@@ -180,7 +192,7 @@ export const projectService = {
   async getAll() {
     const { data, error } = await supabase
       .from("projects")
-      .select("id, name, bcip_canvas, change_logic, change_strategy, manager_name, document_name, document_mime_type, created_at, updated_at")
+      .select("*")
       .order("created_at", { ascending: true });
 
     if (error) throw error;
@@ -190,7 +202,7 @@ export const projectService = {
   async getById(id: number) {
     const { data, error } = await supabase
       .from("projects")
-      .select("id, name, bcip_canvas, change_logic, change_strategy, manager_name, document_name, document_mime_type, created_at, updated_at")
+      .select("*")
       .eq("id", id)
       .single();
 
@@ -290,6 +302,86 @@ export const projectService = {
         document_name: null,
         document_mime_type: null,
         document_data: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", projectId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return toCamelProject(updated);
+  },
+
+  async uploadFieldDocument(projectId: number, field: "bcip" | "logic" | "strategy", file: File) {
+    const filePath = `${projectId}/${field}/${Date.now()}_${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from("project-documents")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const nameCol = `${field}_doc_name` as const;
+    const pathCol = `${field}_doc_path` as const;
+
+    const { data: project, error } = await supabase
+      .from("projects")
+      .update({
+        [nameCol]: file.name,
+        [pathCol]: filePath,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", projectId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return toCamelProject(project);
+  },
+
+  async downloadFieldDocument(projectId: number, field: "bcip" | "logic" | "strategy") {
+    const nameCol = `${field}_doc_name`;
+    const pathCol = `${field}_doc_path`;
+
+    const { data: project, error } = await supabase
+      .from("projects")
+      .select(`${nameCol}, ${pathCol}`)
+      .eq("id", projectId)
+      .single();
+
+    if (error) throw error;
+    const docName = (project as Record<string, string | null>)[nameCol];
+    const docPath = (project as Record<string, string | null>)[pathCol];
+
+    if (!docPath || !docName) throw new Error("No document attached");
+
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from("project-documents")
+      .download(docPath);
+
+    if (downloadError) throw downloadError;
+    return { blob: fileData, name: docName };
+  },
+
+  async deleteFieldDocument(projectId: number, field: "bcip" | "logic" | "strategy") {
+    const pathCol = `${field}_doc_path`;
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select(pathCol)
+      .eq("id", projectId)
+      .single();
+
+    const docPath = (project as Record<string, string | null> | null)?.[pathCol];
+    if (docPath) {
+      await supabase.storage.from("project-documents").remove([docPath]);
+    }
+
+    const nameCol = `${field}_doc_name`;
+    const { data: updated, error } = await supabase
+      .from("projects")
+      .update({
+        [nameCol]: null,
+        [pathCol]: null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", projectId)

@@ -14,6 +14,12 @@ CREATE TABLE IF NOT EXISTS projects (
   document_name TEXT,
   document_mime_type TEXT,
   document_data TEXT,
+  bcip_doc_name TEXT,
+  bcip_doc_path TEXT,
+  logic_doc_name TEXT,
+  logic_doc_path TEXT,
+  strategy_doc_name TEXT,
+  strategy_doc_path TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

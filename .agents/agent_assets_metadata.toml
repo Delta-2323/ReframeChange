@@ -6,3 +6,9 @@ id = "PwzHiPwxLkTiAiME6RxMZ"
 uri = "file://supabase-migration.txt"
 type = "text"
 title = "Supabase Migration SQL (with relationships)"
+
+[[outputs]]
+id = "-S6Bg-nsv89i9E9uW_c0r"
+uri = "file://supabase-add-field-docs.txt"
+type = "text"
+title = "SQL Migration — Add Per-Field Document Columns"
