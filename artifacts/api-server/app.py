@@ -295,7 +295,21 @@ def update_project(project_id):
         if "assessmentEndDate" in body:
             row["assessment_end_date"] = body["assessmentEndDate"] or None
 
-        result = supabase.table("projects").update(row).eq("id", project_id).execute()
+        try:
+            result = supabase.table("projects").update(row).eq("id", project_id).execute()
+        except Exception as update_err:
+            err_msg = str(update_err)
+            if "column" in err_msg and "schema cache" in err_msg:
+                optional_cols = [
+                    "start_date", "go_live_date", "communication_start_date",
+                    "assessment_end_date", "communication_plan", "stakeholder_impact",
+                    "status",
+                ]
+                for col in optional_cols:
+                    row.pop(col, None)
+                result = supabase.table("projects").update(row).eq("id", project_id).execute()
+            else:
+                raise update_err
         project = result.data[0] if result.data else None
         if not project:
             return jsonify({"error": "Project not found"}), 404
