@@ -1,22 +1,9 @@
 -- Supabase Migration for Game Changer / REM16™
 -- Run this in your Supabase SQL Editor (Dashboard > SQL Editor > New Query)
 
--- 1. Surveys table
-CREATE TABLE IF NOT EXISTS surveys (
-  id SERIAL PRIMARY KEY,
-  stakeholder_name TEXT NOT NULL,
-  stakeholder_email TEXT NOT NULL,
-  role TEXT NOT NULL,
-  thinking_focus TEXT NOT NULL,
-  orientation TEXT NOT NULL,
-  change_role TEXT NOT NULL,
-  mental_model TEXT NOT NULL,
-  mental_model_description TEXT NOT NULL,
-  project_id INTEGER,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- 2. Projects table
+-- ============================================================
+-- 1. Projects table (created first — referenced by other tables)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS projects (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
@@ -31,11 +18,33 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ============================================================
+-- 2. Surveys table
+--    → surveys.project_id references projects.id
+-- ============================================================
+CREATE TABLE IF NOT EXISTS surveys (
+  id SERIAL PRIMARY KEY,
+  stakeholder_name TEXT NOT NULL,
+  stakeholder_email TEXT NOT NULL,
+  role TEXT NOT NULL,
+  thinking_focus TEXT NOT NULL,
+  orientation TEXT NOT NULL,
+  change_role TEXT NOT NULL,
+  mental_model TEXT NOT NULL,
+  mental_model_description TEXT NOT NULL,
+  project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
 -- 3. AI Messages table
+--    → ai_messages.survey_id  references surveys.id
+--    → ai_messages.project_id references projects.id
+-- ============================================================
 CREATE TABLE IF NOT EXISTS ai_messages (
   id SERIAL PRIMARY KEY,
-  survey_id INTEGER NOT NULL,
-  project_id INTEGER NOT NULL,
+  survey_id INTEGER NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   stakeholder_name TEXT NOT NULL,
   mental_model TEXT NOT NULL,
   generated_content TEXT NOT NULL,
@@ -45,41 +54,64 @@ CREATE TABLE IF NOT EXISTS ai_messages (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ============================================================
 -- 4. Conversations table
+-- ============================================================
 CREATE TABLE IF NOT EXISTS conversations (
   id SERIAL PRIMARY KEY,
   title TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ============================================================
 -- 5. Messages table
+--    → messages.conversation_id references conversations.id
+-- ============================================================
 CREATE TABLE IF NOT EXISTS messages (
   id SERIAL PRIMARY KEY,
-  conversation_id INTEGER REFERENCES conversations(id),
+  conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   role TEXT NOT NULL,
   content TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Disable RLS on all tables (this app uses PIN-based auth, not Supabase Auth)
+-- ============================================================
+-- RELATIONSHIPS SUMMARY
+-- ============================================================
+--
+--  projects  ◄──────────  surveys.project_id        (many surveys → one project, optional)
+--  projects  ◄──────────  ai_messages.project_id     (many AI messages → one project)
+--  surveys   ◄──────────  ai_messages.survey_id      (many AI messages → one survey)
+--  conversations ◄──────  messages.conversation_id   (many messages → one conversation)
+--
+--  Cascade rules:
+--    • Deleting a project  → sets survey.project_id to NULL
+--                          → deletes related ai_messages
+--    • Deleting a survey   → deletes related ai_messages
+--    • Deleting a conversation → deletes related messages
+--
+
+-- ============================================================
+-- Row Level Security (permissive — app uses PIN auth, not Supabase Auth)
+-- ============================================================
 ALTER TABLE surveys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- Create permissive policies for all operations (no auth required)
 CREATE POLICY "Allow all on surveys" ON surveys FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on projects" ON projects FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on ai_messages" ON ai_messages FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on conversations" ON conversations FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on messages" ON messages FOR ALL USING (true) WITH CHECK (true);
 
--- Create storage bucket for project documents
+-- ============================================================
+-- Storage bucket for project documents
+-- ============================================================
 INSERT INTO storage.buckets (id, name, public) VALUES ('project-documents', 'project-documents', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Allow public access to project documents bucket
 CREATE POLICY "Allow public read on project-documents" ON storage.objects FOR SELECT USING (bucket_id = 'project-documents');
 CREATE POLICY "Allow public insert on project-documents" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'project-documents');
 CREATE POLICY "Allow public update on project-documents" ON storage.objects FOR UPDATE USING (bucket_id = 'project-documents');

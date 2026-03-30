@@ -5,4 +5,4 @@ generated = []
 id = "PwzHiPwxLkTiAiME6RxMZ"
 uri = "file://supabase-migration.txt"
 type = "text"
-title = "Supabase Migration SQL"
+title = "Supabase Migration SQL (with relationships)"
