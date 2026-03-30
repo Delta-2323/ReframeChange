@@ -11,46 +11,68 @@ A change management web application based on the REM16™ framework that maps st
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
 - **Frontend**: React + Vite (artifacts/game-changer)
-- **API framework**: Express 5 (artifacts/api-server)
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
+- **API framework**: Express 5 (artifacts/api-server) — AI generation + email only
+- **Database**: Supabase PostgreSQL (direct client from frontend)
+- **Storage**: Supabase Storage (project documents)
 - **AI Integration**: Replit AI Integrations → OpenAI (gpt-5.2)
 - **Charts**: Recharts (mental model distribution)
 - **Forms**: react-hook-form + @hookform/resolvers + zod
+
+## Architecture
+
+### Supabase (Frontend Direct)
+All CRUD operations go directly from the React frontend to Supabase via `@supabase/supabase-js`:
+- Surveys: create, list, get by ID
+- Projects: create, update, list, get by ID
+- AI Messages: list, get by ID, update (status/content)
+- Dashboard Stats: aggregated from surveys/projects/messages
+- Document Storage: Supabase Storage bucket `project-documents`
+
+### Express Server (AI + Email Only)
+The Express API server is kept only for operations requiring server-side secrets:
+- `POST /api/messages` — AI message generation (needs OpenAI key)
+- `POST /api/messages/:id/send-email` — email sending (needs Gmail credentials)
+- `POST /api/dashboard/ai-summary` — AI landscape analysis (needs OpenAI key)
+
+### REM16™ Logic
+The mental model computation (`rem16.ts`) runs entirely on the frontend — no server call needed for survey classification.
 
 ## Structure
 
 ```text
 artifacts/
-  api-server/       # Express API server
+  api-server/          # Express API (AI + email only)
     src/
-      lib/rem16.ts  # REM16™ mental model logic engine
+      lib/supabase.ts  # Server-side Supabase client
+      lib/email.ts     # Nodemailer + Gmail
       routes/
-        surveys.ts  # Survey submission + retrieval
-        projects.ts # Project context management
-        aiMessages.ts # AI message generation
-        dashboard.ts  # Stats and analytics
-  game-changer/     # React + Vite frontend
+        aiMessages.ts  # AI generation + email sending
+        dashboard.ts   # AI summary generation
+  game-changer/        # React + Vite frontend
     src/
+      lib/supabase.ts           # Frontend Supabase client
+      lib/supabase-services.ts  # All CRUD service functions
+      lib/rem16.ts              # REM16™ mental model engine (frontend)
+      hooks/use-supabase.ts     # React Query hooks for Supabase
       pages/
         Home.tsx
         survey/SurveyForm.tsx
         survey/SurveyResult.tsx
         dashboard/ManagerDashboard.tsx
         dashboard/MessageReview.tsx
-
-lib/
-  api-spec/openapi.yaml       # OpenAPI contract (source of truth)
-  api-client-react/           # Generated React Query hooks
-  api-zod/                    # Generated Zod schemas
-  db/src/schema/              # Drizzle ORM schemas
-    surveys.ts
-    projects.ts
-    aiMessages.ts
-  integrations-openai-ai-server/  # OpenAI server-side integration
-  integrations-openai-ai-react/   # OpenAI React client hooks
 ```
+
+## Environment Variables
+
+### Frontend (Vite)
+- `VITE_SUPABASE_URL` — Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` — Supabase anon/public key
+
+### Server
+- `SUPABASE_URL` — Supabase project URL
+- `SUPABASE_ANON_KEY` — Supabase anon key
+- `GMAIL_FROM_EMAIL` — Gmail sender address
+- `GMAIL_APP_PASSWORD` — Gmail App Password (Secret)
 
 ## Key Features
 
@@ -61,54 +83,29 @@ lib/
 - **Change Role**: Rockstar | Roadie
 
 ### Stakeholder Survey
-4-question multi-step form with progress indicator. Outputs the stakeholder's mental model archetype.
+4-question multi-step form with progress indicator. Mental model computed on frontend via `rem16.ts`, saved directly to Supabase.
 
 ### Manager Dashboard
 - PIN-protected (password: `manager123`)
 - Overview with stats and mental model distribution bar chart
-- Projects management (BCIP Canvas, Change Logic, Change Strategy)
+- Projects management with Supabase Storage document upload
 - Survey responses table
-- AI message generation, review, and approval workflow
+- AI message generation (calls Express), review/edit/approve (Supabase direct)
 
 ### AI Message Generation
-Uses OpenAI gpt-5.2 via Replit AI Integrations to generate tailored, psychologically safe change management messages. No user API key required.
+Uses OpenAI gpt-5.2 via Replit AI Integrations. Express reads survey + project from Supabase, generates message, saves to Supabase.
+
+## Supabase Setup
+
+Run `supabase-migration.sql` in the Supabase SQL Editor to create tables, RLS policies, and storage bucket.
+
+Tables: `surveys`, `projects`, `ai_messages`, `conversations`, `messages`
+Storage: `project-documents` bucket (public)
+RLS: Permissive policies (app uses PIN auth, not Supabase Auth)
 
 ## Development
 
 ```bash
-# Run all services
 pnpm --filter @workspace/game-changer run dev   # Frontend (port 19819)
 pnpm --filter @workspace/api-server run dev      # API (port 8080)
-
-# DB migrations
-pnpm --filter @workspace/db run push
-
-# Codegen after OpenAPI changes
-pnpm --filter @workspace/api-spec run codegen
 ```
-
-## Email System
-
-Uses **Nodemailer + Gmail** (no third-party email service needed).
-
-Required environment variables:
-- `GMAIL_FROM_EMAIL` — the Gmail address to send from (set as env var: `somikun02@gmail.com`)
-- `GMAIL_APP_PASSWORD` — Gmail App Password (set as Replit Secret)
-
-To generate a Gmail App Password:
-1. Go to myaccount.google.com → Security
-2. Enable 2-Step Verification
-3. Search "App passwords" → Create one → Copy the 16-char code
-
-The email module is at `artifacts/api-server/src/lib/email.ts`.
-
-> Note: SendGrid and Resend integrations were dismissed by the user. Gmail/Nodemailer is the chosen solution.
-
-## API Endpoints
-
-All prefixed with `/api/`:
-- `POST/GET /surveys` — survey submission and retrieval (includes `stakeholderEmail` field)
-- `POST/GET /projects` + `PUT /projects/:id` — project CRUD
-- `POST/GET /messages` + `PUT /messages/:id` — AI message management
-- `POST /messages/:id/send-email` — send approved message to stakeholder via Gmail
-- `GET /dashboard/stats` — analytics and mental model distribution

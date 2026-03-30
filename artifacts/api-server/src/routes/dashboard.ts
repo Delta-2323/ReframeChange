@@ -1,7 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db } from "@workspace/db";
-import { surveysTable, projectsTable, aiMessagesTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { supabase } from "../lib/supabase.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
@@ -10,38 +8,37 @@ router.post("/ai-summary", async (req, res) => {
   try {
     const projectId: number | null = req.body?.projectId ?? null;
 
-    const surveys = await db.select().from(surveysTable);
-    const [projectsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(projectsTable);
-    const [messagesCount] = await db.select({ count: sql<number>`count(*)::int` }).from(aiMessagesTable);
-    const [approvedCount] = await db.select({ count: sql<number>`count(*)::int` }).from(aiMessagesTable).where(eq(aiMessagesTable.status, "approved"));
+    const { data: surveys } = await supabase.from("surveys").select("*");
+    const { count: projectsCount } = await supabase.from("projects").select("*", { count: "exact", head: true });
+    const { count: messagesCount } = await supabase.from("ai_messages").select("*", { count: "exact", head: true });
+    const { count: approvedCount } = await supabase.from("ai_messages").select("*", { count: "exact", head: true }).eq("status", "approved");
 
-    const distribution = await db
-      .select({ mentalModel: surveysTable.mentalModel, count: sql<number>`count(*)::int` })
-      .from(surveysTable)
-      .groupBy(surveysTable.mentalModel)
-      .orderBy(sql`count(*) DESC`);
+    const allSurveys = surveys || [];
 
+    const distributionMap: Record<string, number> = {};
     const thinkingFocusCounts: Record<string, number> = {};
     const orientationCounts: Record<string, number> = {};
     const roleCounts: Record<string, number> = {};
-    for (const s of surveys) {
-      thinkingFocusCounts[s.thinkingFocus] = (thinkingFocusCounts[s.thinkingFocus] ?? 0) + 1;
+
+    for (const s of allSurveys) {
+      distributionMap[s.mental_model] = (distributionMap[s.mental_model] ?? 0) + 1;
+      thinkingFocusCounts[s.thinking_focus] = (thinkingFocusCounts[s.thinking_focus] ?? 0) + 1;
       orientationCounts[s.orientation] = (orientationCounts[s.orientation] ?? 0) + 1;
-      roleCounts[s.changeRole] = (roleCounts[s.changeRole] ?? 0) + 1;
+      roleCounts[s.change_role] = (roleCounts[s.change_role] ?? 0) + 1;
     }
 
     let projectContext = "";
     if (projectId) {
-      const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+      const { data: project } = await supabase.from("projects").select("*").eq("id", projectId).single();
       if (project) {
         projectContext = `\nProject Focus: ${project.name}`;
-        if (project.bcipCanvas) projectContext += `\nBCIP Canvas: ${project.bcipCanvas.substring(0, 400)}`;
-        if (project.changeLogic) projectContext += `\nChange Logic: ${project.changeLogic.substring(0, 400)}`;
-        if (project.changeStrategy) projectContext += `\nChange Strategy: ${project.changeStrategy.substring(0, 400)}`;
+        if (project.bcip_canvas) projectContext += `\nBCIP Canvas: ${project.bcip_canvas.substring(0, 400)}`;
+        if (project.change_logic) projectContext += `\nChange Logic: ${project.change_logic.substring(0, 400)}`;
+        if (project.change_strategy) projectContext += `\nChange Strategy: ${project.change_strategy.substring(0, 400)}`;
       }
     }
 
-    if (surveys.length === 0) {
+    if (allSurveys.length === 0) {
       return res.json({
         summary: "No stakeholder surveys have been completed yet. Complete some surveys to generate a meaningful analysis of your change landscape.",
         keyInsights: ["No survey data available yet."],
@@ -51,7 +48,7 @@ router.post("/ai-summary", async (req, res) => {
       });
     }
 
-    const distributionText = distribution.map(d => `${d.mentalModel}: ${d.count}`).join(", ");
+    const distributionText = Object.entries(distributionMap).map(([k, v]) => `${k}: ${v}`).join(", ");
     const thinkingText = Object.entries(thinkingFocusCounts).map(([k, v]) => `${k}: ${v}`).join(", ");
     const orientationText = Object.entries(orientationCounts).map(([k, v]) => `${k}: ${v}`).join(", ");
     const roleText = Object.entries(roleCounts).map(([k, v]) => `${k}: ${v}`).join(", ");
@@ -59,9 +56,9 @@ router.post("/ai-summary", async (req, res) => {
     const prompt = `You are an expert organisational change management consultant specialising in the REM16™ framework. Analyse the following stakeholder data and produce a strategic summary for the change manager.
 
 STAKEHOLDER DATA:
-- Total stakeholders surveyed: ${surveys.length}
-- Active projects: ${projectsCount?.count ?? 0}
-- AI messages generated: ${messagesCount?.count ?? 0} (${approvedCount?.count ?? 0} approved)
+- Total stakeholders surveyed: ${allSurveys.length}
+- Active projects: ${projectsCount ?? 0}
+- AI messages generated: ${messagesCount ?? 0} (${approvedCount ?? 0} approved)
 - Mental model distribution: ${distributionText}
 - Thinking focus breakdown: ${thinkingText}
 - Orientation (Eager vs Cautious): ${orientationText}
@@ -103,35 +100,6 @@ Respond only with valid JSON.`;
   } catch (error) {
     console.error("Error generating AI summary:", error);
     res.status(500).json({ error: "Failed to generate AI summary" });
-  }
-});
-
-router.get("/stats", async (_req, res) => {
-  try {
-    const [surveysCount] = await db.select({ count: sql<number>`count(*)::int` }).from(surveysTable);
-    const [projectsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(projectsTable);
-    const [messagesCount] = await db.select({ count: sql<number>`count(*)::int` }).from(aiMessagesTable);
-    const [approvedCount] = await db.select({ count: sql<number>`count(*)::int` }).from(aiMessagesTable).where(eq(aiMessagesTable.status, "approved"));
-
-    const distribution = await db
-      .select({
-        mentalModel: surveysTable.mentalModel,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(surveysTable)
-      .groupBy(surveysTable.mentalModel)
-      .orderBy(sql`count(*) DESC`);
-
-    res.json({
-      totalSurveys: surveysCount?.count ?? 0,
-      totalProjects: projectsCount?.count ?? 0,
-      totalMessages: messagesCount?.count ?? 0,
-      approvedMessages: approvedCount?.count ?? 0,
-      mentalModelDistribution: distribution,
-    });
-  } catch (error) {
-    console.error("Error fetching dashboard stats:", error);
-    res.status(500).json({ error: "Failed to fetch dashboard stats" });
   }
 });
 

@@ -1,6 +1,6 @@
 import { useLocation, useParams } from "wouter";
 import { motion } from "framer-motion";
-import { useGetSurvey } from "@workspace/api-client-react";
+import { useGetSurvey } from "@/hooks/use-supabase";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RotateCcw, Sparkles } from "lucide-react";
@@ -62,7 +62,6 @@ export default function SurveyResult() {
           transition={{ duration: 0.5 }}
           className="space-y-6"
         >
-          {/* Hero result card */}
           <div className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
             <div className="bg-primary px-8 py-10 text-center relative overflow-hidden">
               <div className="absolute inset-0 opacity-5 bg-[radial-gradient(ellipse_at_top_right,_hsl(185_72%_60%),_transparent_60%)]" />
@@ -86,7 +85,6 @@ export default function SurveyResult() {
             </div>
 
             <div className="p-7 md:p-9">
-              {/* Profile breakdown */}
               <div className="grid grid-cols-3 gap-3 mb-8">
                 {[
                   { label: "Thinking Focus", value: survey.thinkingFocus },
@@ -102,7 +100,6 @@ export default function SurveyResult() {
                 ))}
               </div>
 
-              {/* Description */}
               <div className="mb-8">
                 <h3 className="text-lg font-display font-bold text-foreground mb-3">What this means for you</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
@@ -110,7 +107,6 @@ export default function SurveyResult() {
                 </p>
               </div>
 
-              {/* What happens next */}
               <div className="rounded-xl bg-secondary/5 border border-secondary/15 p-5 mb-8">
                 <div className="flex items-start gap-3">
                   <div className="h-8 w-8 rounded-lg bg-secondary/15 flex items-center justify-center shrink-0 mt-0.5">
@@ -125,7 +121,6 @@ export default function SurveyResult() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="outline"

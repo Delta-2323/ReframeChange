@@ -13,9 +13,10 @@ import { ManagerAuth } from "./ManagerAuth";
 import { useManagerAuth } from "@/hooks/use-manager-auth";
 import { 
   useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, 
-  useCreateProject, useUpdateProject, useGenerateMessage, useGenerateAiSummary,
-  getGetMessagesQueryKey, getGetDashboardStatsQueryKey, getGetProjectsQueryKey 
-} from "@workspace/api-client-react";
+  useCreateProject, useUpdateProject,
+  projectKeys, messageKeys, dashboardKeys
+} from "@/hooks/use-supabase";
+import { projectService } from "@/lib/supabase-services";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,18 +40,28 @@ type AiSummaryData = {
 
 function AiSummaryCard() {
   const [summaryData, setSummaryData] = useState<AiSummaryData | null>(null);
-  const generateSummary = useGenerateAiSummary();
+  const [isPending, setIsPending] = useState(false);
+  const { toast } = useToast();
 
   const handleGenerate = async () => {
+    setIsPending(true);
     try {
-      const result = await generateSummary.mutateAsync({ data: {} });
+      const res = await fetch(`/api/dashboard/ai-summary`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Failed to generate summary");
+      const result = await res.json();
       setSummaryData(result as AiSummaryData);
     } catch {
-      // error handled by toast below
+      toast({ title: "Failed to generate summary", variant: "destructive" });
+    } finally {
+      setIsPending(false);
     }
   };
 
-  if (!summaryData && !generateSummary.isPending) {
+  if (!summaryData && !isPending) {
     return (
       <Card className="shadow-sm border-border/50 bg-gradient-to-br from-primary/5 via-background to-teal-500/5">
         <CardHeader className="pb-4">
@@ -90,7 +101,7 @@ function AiSummaryCard() {
     );
   }
 
-  if (generateSummary.isPending) {
+  if (isPending) {
     return (
       <Card className="shadow-sm border-border/50">
         <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
@@ -131,13 +142,11 @@ function AiSummaryCard() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Executive Summary */}
         <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
           <p className="text-sm text-foreground leading-relaxed">{summaryData.summary}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-5">
-          {/* Key Insights */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-teal-600" />
@@ -153,7 +162,6 @@ function AiSummaryCard() {
             </ul>
           </div>
 
-          {/* Recommendations */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-amber-500" />
@@ -170,7 +178,6 @@ function AiSummaryCard() {
           </div>
         </div>
 
-        {/* Risk Flags */}
         {summaryData.riskFlags.length > 0 && (
           <div className="rounded-xl bg-rose-50 border border-rose-100 p-4 space-y-3">
             <div className="flex items-center gap-2">
@@ -192,7 +199,6 @@ function AiSummaryCard() {
   );
 }
 
-// Sub-components for Tabs to keep file structured
 function OverviewTab() {
   const { data: stats, isLoading } = useGetDashboardStats();
 
@@ -248,7 +254,6 @@ function OverviewTab() {
         </Card>
       </div>
 
-      {/* AI Summary Card */}
       <AiSummaryCard />
 
       <Card className="shadow-sm border-border/50">
@@ -300,20 +305,10 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
     if (!file) return;
     e.target.value = "";
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     setIsUploading(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/document`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Upload failed");
-      }
-      await queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+      await projectService.uploadDocument(projectId, file);
+      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
       toast({ title: "Document attached!", description: file.name });
     } catch (err) {
       toast({ title: "Upload failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
@@ -322,12 +317,27 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      const { blob, name } = await projectService.downloadDocument(projectId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast({ title: "Download failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    }
+  };
+
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/document`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to remove document");
-      await queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+      await projectService.deleteDocument(projectId);
+      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
       toast({ title: "Document removed" });
     } catch (err) {
       toast({ title: "Remove failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
@@ -344,14 +354,13 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
           <span className="text-xs text-teal-700 truncate max-w-[140px]" title={documentName}>
             {documentName}
           </span>
-          <a
-            href={`/api/projects/${projectId}/document`}
-            download={documentName}
+          <button
+            onClick={handleDownload}
             className="ml-auto shrink-0"
             title="Download document"
           >
             <Download className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
-          </a>
+          </button>
           <button
             onClick={handleDelete}
             disabled={isDeleting}
@@ -441,9 +450,9 @@ function ProjectsTab() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createMutation.mutateAsync({ data: createForm });
+      await createMutation.mutateAsync(createForm);
       toast({ title: "Project Created!" });
-      queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
       setCreateOpen(false);
       setCreateForm(EMPTY_FORM);
     } catch {
@@ -469,7 +478,7 @@ function ProjectsTab() {
     try {
       await updateMutation.mutateAsync({ id: editProjectId, data: editForm });
       toast({ title: "Project Updated!" });
-      queryClient.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
       setEditOpen(false);
     } catch {
       toast({ title: "Error updating project", variant: "destructive" });
@@ -616,10 +625,10 @@ function MessagesTab() {
   const { data: messagesData, isLoading: msgLoading, isError: msgError, refetch } = useGetMessages();
   const { data: projectsData } = useGetProjects();
   const { data: surveysData } = useGetSurveys();
-  const generateMutation = useGenerateMessage();
   
   const [open, setOpen] = useState(false);
   const [genForm, setGenForm] = useState({ surveyId: '', projectId: '' });
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const noSurveys = !surveysData?.surveys.length;
   const noProjects = !projectsData?.projects.length;
@@ -631,17 +640,24 @@ function MessagesTab() {
       toast({ title: "Please select both a stakeholder and a project", variant: "destructive" });
       return;
     }
+    setIsGenerating(true);
     try {
-      const res = await generateMutation.mutateAsync({ 
-        data: { surveyId: parseInt(genForm.surveyId), projectId: parseInt(genForm.projectId) } 
+      const res = await fetch(`/api/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ surveyId: parseInt(genForm.surveyId), projectId: parseInt(genForm.projectId) }),
       });
+      if (!res.ok) throw new Error("Failed to generate message");
+      const data = await res.json();
       toast({ title: "AI message generated!", description: "Opening the message for review..." });
-      queryClient.invalidateQueries({ queryKey: getGetMessagesQueryKey() });
-      queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: messageKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats });
       setOpen(false);
-      setLocation(`/manager/messages/${res.id}`);
+      setLocation(`/manager/messages/${data.id}`);
     } catch {
       toast({ title: "Failed to generate message", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -662,7 +678,6 @@ function MessagesTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-2xl font-bold">AI Communications</h3>
@@ -679,7 +694,6 @@ function MessagesTab() {
               <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> Generate AI Message</DialogTitle>
             </DialogHeader>
 
-            {/* Pre-requisite warnings */}
             {(noSurveys || noProjects) && (
               <div className="space-y-2 my-2">
                 {noSurveys && (
@@ -726,8 +740,8 @@ function MessagesTab() {
                 </Select>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={generateMutation.isPending || noSurveys || noProjects} className="w-full bg-primary">
-                  {generateMutation.isPending
+                <Button type="submit" disabled={isGenerating || noSurveys || noProjects} className="w-full bg-primary">
+                  {isGenerating
                     ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</>
                     : <><Sparkles className="mr-2 h-4 w-4" /> Generate AI Message</>
                   }
@@ -738,7 +752,6 @@ function MessagesTab() {
         </Dialog>
       </div>
 
-      {/* Empty state */}
       {messages.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-2xl text-center bg-muted/20">
           <div className="p-4 rounded-full bg-primary/10 mb-4">
@@ -771,7 +784,6 @@ function MessagesTab() {
                 className="flex flex-col sm:flex-row sm:items-center gap-4 bg-card border border-border rounded-xl p-4 hover:shadow-md transition-all cursor-pointer group"
                 onClick={() => setLocation(`/manager/messages/${msg.id}`)}
               >
-                {/* Left: Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-semibold text-foreground">{msg.stakeholderName}</span>
@@ -787,7 +799,6 @@ function MessagesTab() {
                   <p className="text-xs text-muted-foreground mt-1.5">{format(new Date(msg.createdAt), 'MMM d, yyyy')}</p>
                 </div>
 
-                {/* Right: Status + Action */}
                 <div className="flex items-center gap-3 shrink-0">
                   {msg.status === 'approved' ? (
                     <Badge className="bg-teal-500/10 text-teal-700 border-teal-200 shadow-none gap-1">

@@ -23,11 +23,8 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   useGetMessage, 
   useUpdateMessage,
-  useSendMessageEmail,
-  getGetMessageQueryKey, 
-  getGetMessagesQueryKey,
-  UpdateMessageInputStatus
-} from "@workspace/api-client-react";
+  messageKeys,
+} from "@/hooks/use-supabase";
 
 function downloadAsPDF(stakeholderName: string, mentalModel: string, content: string) {
   const printWindow = window.open('', '_blank', 'width=800,height=900');
@@ -119,7 +116,7 @@ export default function MessageReview() {
   const [emailSubject, setEmailSubject] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const sendEmailMutation = useSendMessageEmail();
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   useEffect(() => {
     if (message) {
@@ -140,7 +137,7 @@ export default function MessageReview() {
     setIsEdited(true);
   };
 
-  const saveChanges = async (newStatus?: UpdateMessageInputStatus) => {
+  const saveChanges = async (newStatus?: string) => {
     setIsSaving(true);
     try {
       await updateMutation.mutateAsync({
@@ -151,8 +148,8 @@ export default function MessageReview() {
         }
       });
       
-      queryClient.invalidateQueries({ queryKey: getGetMessageQueryKey(msgId) });
-      queryClient.invalidateQueries({ queryKey: getGetMessagesQueryKey() });
+      queryClient.invalidateQueries({ queryKey: messageKeys.detail(msgId) });
+      queryClient.invalidateQueries({ queryKey: messageKeys.all });
       setIsEdited(false);
       
       if (newStatus === "approved") {
@@ -183,16 +180,27 @@ export default function MessageReview() {
 
   const handleSendEmail = async () => {
     if (!emailSubject.trim()) return;
+    setIsSendingEmail(true);
     try {
-      await sendEmailMutation.mutateAsync({ id: msgId, data: { subject: emailSubject.trim() } });
-      queryClient.invalidateQueries({ queryKey: getGetMessageQueryKey(msgId) });
-      queryClient.invalidateQueries({ queryKey: getGetMessagesQueryKey() });
+      const res = await fetch(`/api/messages/${msgId}/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: emailSubject.trim() }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any)?.error ?? "Failed to send email");
+      }
+      queryClient.invalidateQueries({ queryKey: messageKeys.detail(msgId) });
+      queryClient.invalidateQueries({ queryKey: messageKeys.all });
       setShowEmailDialog(false);
       toast({ title: "Email sent!", description: `Successfully delivered to ${message?.stakeholderName}.` });
       setLocation("/manager");
     } catch (err: any) {
-      const msg = err?.response?.data?.error ?? err?.message ?? "Failed to send email";
+      const msg = err?.message ?? "Failed to send email";
       toast({ title: "Email failed", description: msg, variant: "destructive" });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -242,7 +250,6 @@ export default function MessageReview() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
 
-      {/* Sticky Action Bar */}
       <div className="bg-white border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4 flex-wrap">
           <Button variant="ghost" size="sm" onClick={() => setLocation("/manager")} className="text-muted-foreground gap-1.5">
@@ -250,12 +257,10 @@ export default function MessageReview() {
           </Button>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Download PDF */}
             <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="gap-1.5">
               <Download className="h-4 w-4" /> Download PDF
             </Button>
 
-            {/* Save Draft */}
             <Button 
               variant="outline" 
               size="sm"
@@ -267,7 +272,6 @@ export default function MessageReview() {
               Save
             </Button>
 
-            {/* Approve */}
             {message.status !== 'approved' && message.status !== 'sent' && (
               <Button 
                 size="sm"
@@ -279,7 +283,6 @@ export default function MessageReview() {
               </Button>
             )}
 
-            {/* Mark as Sent */}
             {message.status === 'approved' && (
               <Button 
                 size="sm"
@@ -297,9 +300,7 @@ export default function MessageReview() {
       <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full">
         <div className="grid lg:grid-cols-[1fr_300px] gap-6">
 
-          {/* ── Main Editor ── */}
           <div className="space-y-4">
-            {/* Title + Status */}
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Message Review</h1>
@@ -313,7 +314,6 @@ export default function MessageReview() {
               </Badge>
             </div>
 
-            {/* Editor / Preview Tabs */}
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "edit" | "preview")}>
               <div className="flex items-center justify-between">
                 <TabsList className="h-9 bg-muted/50">
@@ -361,7 +361,6 @@ export default function MessageReview() {
                     <span>Preview — how the message will appear</span>
                   </div>
                   <div className="p-6">
-                    {/* Letter Header */}
                     <div className="mb-6 pb-4 border-b border-border">
                       <div className="flex items-center gap-2 mb-1">
                         <FileText className="h-4 w-4 text-primary" />
@@ -379,7 +378,6 @@ export default function MessageReview() {
               </TabsContent>
             </Tabs>
 
-            {/* Bottom action hint */}
             {message.status === 'sent' && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
                 <Send className="h-4 w-4 text-blue-500 shrink-0" />
@@ -388,9 +386,7 @@ export default function MessageReview() {
             )}
           </div>
 
-          {/* ── Sidebar ── */}
           <div className="space-y-4">
-            {/* Stakeholder Card */}
             <Card className="shadow-sm border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wider">
@@ -418,7 +414,6 @@ export default function MessageReview() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
             <Card className="shadow-sm border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Quick Actions</CardTitle>
@@ -474,7 +469,6 @@ export default function MessageReview() {
               </CardContent>
             </Card>
 
-            {/* Why this works */}
             <div className="rounded-xl bg-gradient-to-br from-primary/5 to-teal-500/5 border border-primary/10 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="h-4 w-4 text-primary" />
@@ -488,7 +482,6 @@ export default function MessageReview() {
         </div>
       </main>
 
-      {/* Send Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -522,13 +515,13 @@ export default function MessageReview() {
             </Button>
             <Button
               onClick={handleSendEmail}
-              disabled={sendEmailMutation.isPending || !emailSubject.trim()}
-              className="rounded-xl bg-primary text-white gap-2"
+              disabled={!emailSubject.trim() || isSendingEmail}
+              className="bg-primary text-white rounded-xl gap-2"
             >
-              {sendEmailMutation.isPending ? (
+              {isSendingEmail ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
               ) : (
-                <><Mail className="h-4 w-4" /> Send Email</>
+                <><Send className="h-4 w-4" /> Send Email</>
               )}
             </Button>
           </DialogFooter>

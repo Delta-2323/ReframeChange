@@ -28,3 +28,7 @@ timeoutMs = 20000
 
 [userenv.shared]
 GMAIL_FROM_EMAIL = "somikun02@gmail.com"
+SUPABASE_URL = "https://bdpmidpwfnjuawfenmgo.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcG1pZHB3Zm5qdWF3ZmVubWdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjQ3OTQsImV4cCI6MjA5MDQwMDc5NH0.bclOLcsDkJT9MwM6luiJib_ykoHYQQPe0tmKi3mTEBg"
+VITE_SUPABASE_URL = "https://bdpmidpwfnjuawfenmgo.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkcG1pZHB3Zm5qdWF3ZmVubWdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjQ3OTQsImV4cCI6MjA5MDQwMDc5NH0.bclOLcsDkJT9MwM6luiJib_ykoHYQQPe0tmKi3mTEBg"

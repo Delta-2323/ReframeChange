@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, ChevronRight, Loader2, ArrowLeft } from "lucide-react";
-import { useSubmitSurvey, useGetProjects } from "@workspace/api-client-react";
+import { useSubmitSurvey, useGetProjects } from "@/hooks/use-supabase";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ export default function SurveyForm() {
 
   const onSubmit = async (data: SurveyFormValues) => {
     try {
-      const response = await submitMutation.mutateAsync({ data });
+      const response = await submitMutation.mutateAsync(data);
       toast({
         title: "Survey completed!",
         description: "Analyzing your mental model...",
@@ -84,7 +84,6 @@ export default function SurveyForm() {
     setStep(s => Math.max(s - 1, 1));
   };
 
-  // Helper for rendering selectable cards
   const SelectionCard = ({ fieldName, value, title, description, icon: Icon }: any) => {
     const currentValue = form.watch(fieldName);
     const isSelected = currentValue === value;
@@ -120,7 +119,6 @@ export default function SurveyForm() {
       
       <main className="flex-1 py-10 px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto w-full">
         
-        {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between text-sm font-medium text-muted-foreground mb-2.5">
             <span>Step {step} of 4</span>
@@ -140,7 +138,6 @@ export default function SurveyForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 md:p-12">
             <AnimatePresence mode="wait">
               
-              {/* STEP 1: Basic Info */}
               {step === 1 && (
                 <motion.div
                   key="step1"
@@ -218,7 +215,6 @@ export default function SurveyForm() {
                 </motion.div>
               )}
 
-              {/* STEP 2: Thinking Focus */}
               {step === 2 && (
                 <motion.div
                   key="step2"
@@ -257,7 +253,6 @@ export default function SurveyForm() {
                 </motion.div>
               )}
 
-              {/* STEP 3: Orientation */}
               {step === 3 && (
                 <motion.div
                   key="step3"
@@ -288,7 +283,6 @@ export default function SurveyForm() {
                 </motion.div>
               )}
 
-              {/* STEP 4: Change Role */}
               {step === 4 && (
                 <motion.div
                   key="step4"

@@ -1,9 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db } from "@workspace/db";
-import { aiMessagesTable, surveysTable, projectsTable } from "@workspace/db";
-import { GenerateMessageBody, GetMessageParams, UpdateMessageBody, SendMessageEmailBody } from "@workspace/api-zod";
+import { supabase } from "../lib/supabase.js";
 import { openai } from "@workspace/integrations-openai-ai-server";
-import { eq } from "drizzle-orm";
 import { sendEmail } from "../lib/email.js";
 
 const router: IRouter = Router();
@@ -63,122 +60,118 @@ Write the message now:`;
 
 router.post("/", async (req, res) => {
   try {
-    const body = GenerateMessageBody.parse(req.body);
-    const { surveyId, projectId } = body;
+    const { surveyId, projectId } = req.body;
 
-    const [survey] = await db.select().from(surveysTable).where(eq(surveysTable.id, surveyId));
-    if (!survey) {
+    if (!surveyId || !projectId) {
+      res.status(400).json({ error: "surveyId and projectId are required" });
+      return;
+    }
+
+    const { data: survey, error: surveyErr } = await supabase
+      .from("surveys")
+      .select("*")
+      .eq("id", surveyId)
+      .single();
+
+    if (surveyErr || !survey) {
       res.status(404).json({ error: "Survey not found" });
       return;
     }
 
-    const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
-    if (!project) {
+    const { data: project, error: projectErr } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", projectId)
+      .single();
+
+    if (projectErr || !project) {
       res.status(404).json({ error: "Project not found" });
       return;
     }
 
     const generatedContent = await generateAIMessage(
-      survey.stakeholderName,
-      survey.mentalModel,
-      survey.mentalModelDescription,
+      survey.stakeholder_name,
+      survey.mental_model,
+      survey.mental_model_description,
       survey.role,
       project.name,
-      project.bcipCanvas ?? null,
-      project.changeLogic ?? null,
-      project.changeStrategy ?? null
+      project.bcip_canvas ?? null,
+      project.change_logic ?? null,
+      project.change_strategy ?? null
     );
 
-    const [message] = await db.insert(aiMessagesTable).values({
-      surveyId,
-      projectId,
-      stakeholderName: survey.stakeholderName,
-      mentalModel: survey.mentalModel,
-      generatedContent,
-      editedContent: null,
-      status: "draft",
-    }).returning();
+    const { data: message, error: insertErr } = await supabase
+      .from("ai_messages")
+      .insert({
+        survey_id: surveyId,
+        project_id: projectId,
+        stakeholder_name: survey.stakeholder_name,
+        mental_model: survey.mental_model,
+        generated_content: generatedContent,
+        edited_content: null,
+        status: "draft",
+      })
+      .select()
+      .single();
 
-    res.status(201).json(message);
+    if (insertErr) throw insertErr;
+
+    res.status(201).json({
+      id: message.id,
+      surveyId: message.survey_id,
+      projectId: message.project_id,
+      stakeholderName: message.stakeholder_name,
+      mentalModel: message.mental_model,
+      generatedContent: message.generated_content,
+      editedContent: message.edited_content,
+      status: message.status,
+      createdAt: message.created_at,
+      updatedAt: message.updated_at,
+    });
   } catch (error) {
     console.error("Error generating message:", error);
     res.status(500).json({ error: "Failed to generate message" });
   }
 });
 
-router.get("/", async (_req, res) => {
-  try {
-    const messages = await db.select().from(aiMessagesTable).orderBy(aiMessagesTable.createdAt);
-    res.json({ messages });
-  } catch (error) {
-    console.error("Error fetching messages:", error);
-    res.status(500).json({ error: "Failed to fetch messages" });
-  }
-});
-
-router.get("/:id", async (req, res) => {
-  try {
-    const { id } = GetMessageParams.parse({ id: Number(req.params.id) });
-    const [message] = await db.select().from(aiMessagesTable).where(eq(aiMessagesTable.id, id));
-    if (!message) {
-      res.status(404).json({ error: "Message not found" });
-      return;
-    }
-    res.json(message);
-  } catch (error) {
-    console.error("Error fetching message:", error);
-    res.status(500).json({ error: "Failed to fetch message" });
-  }
-});
-
-router.put("/:id", async (req, res) => {
-  try {
-    const { id } = GetMessageParams.parse({ id: Number(req.params.id) });
-    const body = UpdateMessageBody.parse(req.body);
-
-    const [message] = await db.update(aiMessagesTable)
-      .set({
-        ...(body.editedContent !== undefined ? { editedContent: body.editedContent } : {}),
-        ...(body.status !== undefined ? { status: body.status } : {}),
-        updatedAt: new Date(),
-      })
-      .where(eq(aiMessagesTable.id, id))
-      .returning();
-
-    if (!message) {
-      res.status(404).json({ error: "Message not found" });
-      return;
-    }
-    res.json(message);
-  } catch (error) {
-    console.error("Error updating message:", error);
-    res.status(400).json({ error: "Invalid message data" });
-  }
-});
-
 router.post("/:id/send-email", async (req, res) => {
   try {
-    const { id } = GetMessageParams.parse({ id: Number(req.params.id) });
-    const body = SendMessageEmailBody.parse(req.body);
+    const id = Number(req.params.id);
+    const { subject } = req.body;
 
-    const [message] = await db.select().from(aiMessagesTable).where(eq(aiMessagesTable.id, id));
-    if (!message) {
+    if (!subject) {
+      res.status(400).json({ error: "subject is required" });
+      return;
+    }
+
+    const { data: message, error: msgErr } = await supabase
+      .from("ai_messages")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (msgErr || !message) {
       res.status(404).json({ error: "Message not found" });
       return;
     }
 
-    const [survey] = await db.select().from(surveysTable).where(eq(surveysTable.id, message.surveyId));
-    if (!survey) {
+    const { data: survey, error: surveyErr } = await supabase
+      .from("surveys")
+      .select("*")
+      .eq("id", message.survey_id)
+      .single();
+
+    if (surveyErr || !survey) {
       res.status(404).json({ error: "Survey not found" });
       return;
     }
 
-    if (!survey.stakeholderEmail || survey.stakeholderEmail === "unknown@example.com") {
+    if (!survey.stakeholder_email || survey.stakeholder_email === "unknown@example.com") {
       res.status(400).json({ error: "Stakeholder does not have a valid email address" });
       return;
     }
 
-    const content = message.editedContent || message.generatedContent;
+    const content = message.edited_content || message.generated_content;
 
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
@@ -192,17 +185,18 @@ router.post("/:id/send-email", async (req, res) => {
     `;
 
     await sendEmail({
-      to: survey.stakeholderEmail,
-      subject: body.subject,
+      to: survey.stakeholder_email,
+      subject,
       text: content,
       html: htmlContent,
     });
 
-    await db.update(aiMessagesTable)
-      .set({ status: "sent", updatedAt: new Date() })
-      .where(eq(aiMessagesTable.id, id));
+    await supabase
+      .from("ai_messages")
+      .update({ status: "sent", updated_at: new Date().toISOString() })
+      .eq("id", id);
 
-    res.json({ success: true, message: `Email sent to ${survey.stakeholderEmail}` });
+    res.json({ success: true, message: `Email sent to ${survey.stakeholder_email}` });
   } catch (error: any) {
     console.error("Error sending email:", error);
     if (error.message?.includes("SENDGRID_API_KEY")) {
