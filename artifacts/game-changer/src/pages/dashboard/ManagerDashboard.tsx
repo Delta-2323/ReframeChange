@@ -377,7 +377,7 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
         type="file"
         className="hidden"
         onChange={handleFileChange}
-        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv"
+        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       />
 
       <Button
@@ -403,10 +403,46 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
   );
 }
 
-type ProjectFormData = { name: string; bcipCanvas: string; changeLogic: string; changeStrategy: string; managerName: string };
-const EMPTY_FORM: ProjectFormData = { name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '', managerName: '' };
+type ProjectFormData = { name: string; bcipCanvas: string; changeLogic: string; changeStrategy: string; managerName: string; file: File | null };
+const EMPTY_FORM: ProjectFormData = { name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '', managerName: '', file: null };
+
+const ALLOWED_FILE_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx"];
+const MAX_FILE_SIZE_MB = 10;
 
 function ProjectForm({ formData, onChange }: { formData: ProjectFormData; onChange: (d: ProjectFormData) => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+
+    const ext = "." + file.name.split(".").pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext) && !ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast({ title: "Invalid file type", description: "Please select a PDF or Word document (.pdf, .doc, .docx).", variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      toast({ title: "File too large", description: `Maximum file size is ${MAX_FILE_SIZE_MB} MB.`, variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+
+    onChange({ ...formData, file });
+  };
+
+  const handleRemoveFile = () => {
+    onChange({ ...formData, file: null });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <div className="space-y-4 py-4">
       <div className="space-y-2">
@@ -429,6 +465,43 @@ function ProjectForm({ formData, onChange }: { formData: ProjectFormData; onChan
         <Label>Change Strategy</Label>
         <Textarea rows={3} value={formData.changeStrategy} onChange={e => onChange({...formData, changeStrategy: e.target.value})} placeholder="How will we implement this?..." />
       </div>
+      <div className="space-y-2">
+        <Label>Attach Document (PDF or Word)</Label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          onChange={handleFileSelect}
+        />
+        {formData.file ? (
+          <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
+            <Paperclip className="h-4 w-4 text-teal-600 shrink-0" />
+            <span className="text-sm truncate flex-1" title={formData.file.name}>{formData.file.name}</span>
+            <span className="text-xs text-muted-foreground shrink-0">
+              {(formData.file.size / 1024 / 1024).toFixed(1)} MB
+            </span>
+            <button
+              type="button"
+              onClick={handleRemoveFile}
+              className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+              title="Remove file"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2 border-dashed"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <FileUp className="h-4 w-4" />
+            Choose PDF or Word file
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -442,6 +515,7 @@ function ProjectsTab() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<ProjectFormData>(EMPTY_FORM);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editProjectId, setEditProjectId] = useState<number | null>(null);
@@ -449,14 +523,27 @@ function ProjectsTab() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
-      await createMutation.mutateAsync(createForm);
-      toast({ title: "Project Created!" });
+      const { file, ...formFields } = createForm;
+      const project = await createMutation.mutateAsync(formFields);
+      if (file) {
+        try {
+          await projectService.uploadDocument(project.id, file);
+          toast({ title: "Project Created!", description: `Document "${file.name}" attached.` });
+        } catch {
+          toast({ title: "Project created, but document upload failed", description: "You can attach the document later from the project card.", variant: "destructive" });
+        }
+      } else {
+        toast({ title: "Project Created!" });
+      }
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
       setCreateOpen(false);
       setCreateForm(EMPTY_FORM);
     } catch {
       toast({ title: "Error creating project", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -468,6 +555,7 @@ function ProjectsTab() {
       changeLogic: project.changeLogic ?? '',
       changeStrategy: project.changeStrategy ?? '',
       managerName: project.managerName ?? '',
+      file: null,
     });
     setEditOpen(true);
   };
@@ -475,13 +563,26 @@ function ProjectsTab() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editProjectId) return;
+    setIsSubmitting(true);
     try {
-      await updateMutation.mutateAsync({ id: editProjectId, data: editForm });
-      toast({ title: "Project Updated!" });
+      const { file, ...formFields } = editForm;
+      await updateMutation.mutateAsync({ id: editProjectId, data: formFields });
+      if (file) {
+        try {
+          await projectService.uploadDocument(editProjectId, file);
+          toast({ title: "Project Updated!", description: `Document "${file.name}" attached.` });
+        } catch {
+          toast({ title: "Project updated, but document upload failed", description: "You can attach the document later from the project card.", variant: "destructive" });
+        }
+      } else {
+        toast({ title: "Project Updated!" });
+      }
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
       setEditOpen(false);
     } catch {
       toast({ title: "Error updating project", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -505,8 +606,8 @@ function ProjectsTab() {
             <form onSubmit={handleCreate}>
               <ProjectForm formData={createForm} onChange={setCreateForm} />
               <DialogFooter>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Project
                 </Button>
               </DialogFooter>
@@ -523,8 +624,8 @@ function ProjectsTab() {
           <form onSubmit={handleUpdate}>
             <ProjectForm formData={editForm} onChange={setEditForm} />
             <DialogFooter>
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </DialogFooter>
