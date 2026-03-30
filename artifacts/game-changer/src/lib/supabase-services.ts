@@ -18,9 +18,12 @@ export type Survey = {
 export type Project = {
   id: number;
   name: string;
+  status: string;
   bcip_canvas: string | null;
   change_logic: string | null;
   change_strategy: string | null;
+  communication_plan: string | null;
+  stakeholder_impact: string | null;
   manager_name: string | null;
   document_name: string | null;
   document_mime_type: string | null;
@@ -30,6 +33,14 @@ export type Project = {
   logic_doc_path: string | null;
   strategy_doc_name: string | null;
   strategy_doc_path: string | null;
+  comm_plan_doc_name: string | null;
+  comm_plan_doc_path: string | null;
+  impact_doc_name: string | null;
+  impact_doc_path: string | null;
+  start_date: string | null;
+  go_live_date: string | null;
+  communication_start_date: string | null;
+  assessment_end_date: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -47,12 +58,31 @@ export type AiMessage = {
   updated_at: string;
 };
 
+export type Concern = {
+  id: number;
+  survey_id: number | null;
+  project_id: number | null;
+  stakeholder_name: string;
+  concern_text: string;
+  assigned_to_sme_email: string | null;
+  assigned_to_sme_name: string | null;
+  sme_response: string | null;
+  manager_response: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type DashboardStats = {
   totalSurveys: number;
   totalProjects: number;
   totalMessages: number;
   approvedMessages: number;
+  totalConcerns: number;
+  openConcerns: number;
   mentalModelDistribution: { mentalModel: string; count: number }[];
+  focusAreaDistribution: { focusArea: string; count: number }[];
+  orientationDistribution: { orientation: string; count: number }[];
 };
 
 function toCamelSurvey(s: Survey) {
@@ -75,9 +105,12 @@ function toCamelProject(p: Project) {
   return {
     id: p.id,
     name: p.name,
+    status: p.status,
     bcipCanvas: p.bcip_canvas,
     changeLogic: p.change_logic,
     changeStrategy: p.change_strategy,
+    communicationPlan: p.communication_plan,
+    stakeholderImpact: p.stakeholder_impact,
     managerName: p.manager_name,
     documentName: p.document_name,
     documentMimeType: p.document_mime_type,
@@ -87,6 +120,14 @@ function toCamelProject(p: Project) {
     logicDocPath: p.logic_doc_path,
     strategyDocName: p.strategy_doc_name,
     strategyDocPath: p.strategy_doc_path,
+    commPlanDocName: p.comm_plan_doc_name,
+    commPlanDocPath: p.comm_plan_doc_path,
+    impactDocName: p.impact_doc_name,
+    impactDocPath: p.impact_doc_path,
+    startDate: p.start_date,
+    goLiveDate: p.go_live_date,
+    communicationStartDate: p.communication_start_date,
+    assessmentEndDate: p.assessment_end_date,
     createdAt: p.created_at,
     updatedAt: p.updated_at,
   };
@@ -104,6 +145,23 @@ function toCamelMessage(m: AiMessage) {
     status: m.status,
     createdAt: m.created_at,
     updatedAt: m.updated_at,
+  };
+}
+
+function toCamelConcern(c: Concern) {
+  return {
+    id: c.id,
+    surveyId: c.survey_id,
+    projectId: c.project_id,
+    stakeholderName: c.stakeholder_name,
+    concernText: c.concern_text,
+    assignedToSmeEmail: c.assigned_to_sme_email,
+    assignedToSmeName: c.assigned_to_sme_name,
+    smeResponse: c.sme_response,
+    managerResponse: c.manager_response,
+    status: c.status,
+    createdAt: c.created_at,
+    updatedAt: c.updated_at,
   };
 }
 
@@ -165,13 +223,21 @@ export const surveyService = {
   },
 };
 
+export type FieldDocKey = "bcip" | "logic" | "strategy" | "comm_plan" | "impact";
+
 export const projectService = {
   async create(data: {
     name: string;
     bcipCanvas?: string;
     changeLogic?: string;
     changeStrategy?: string;
+    communicationPlan?: string;
+    stakeholderImpact?: string;
     managerName?: string;
+    startDate?: string | null;
+    goLiveDate?: string | null;
+    communicationStartDate?: string | null;
+    assessmentEndDate?: string | null;
   }) {
     const { data: project, error } = await supabase
       .from("projects")
@@ -180,7 +246,13 @@ export const projectService = {
         bcip_canvas: data.bcipCanvas ?? null,
         change_logic: data.changeLogic ?? null,
         change_strategy: data.changeStrategy ?? null,
+        communication_plan: data.communicationPlan ?? null,
+        stakeholder_impact: data.stakeholderImpact ?? null,
         manager_name: data.managerName ?? null,
+        start_date: data.startDate ?? null,
+        go_live_date: data.goLiveDate ?? null,
+        communication_start_date: data.communicationStartDate ?? null,
+        assessment_end_date: data.assessmentEndDate ?? null,
       })
       .select()
       .single();
@@ -215,7 +287,13 @@ export const projectService = {
     bcipCanvas?: string;
     changeLogic?: string;
     changeStrategy?: string;
+    communicationPlan?: string;
+    stakeholderImpact?: string;
     managerName?: string;
+    startDate?: string | null;
+    goLiveDate?: string | null;
+    communicationStartDate?: string | null;
+    assessmentEndDate?: string | null;
   }) {
     const { data: project, error } = await supabase
       .from("projects")
@@ -224,9 +302,27 @@ export const projectService = {
         bcip_canvas: data.bcipCanvas ?? null,
         change_logic: data.changeLogic ?? null,
         change_strategy: data.changeStrategy ?? null,
+        communication_plan: data.communicationPlan ?? null,
+        stakeholder_impact: data.stakeholderImpact ?? null,
         manager_name: data.managerName ?? null,
+        start_date: data.startDate ?? null,
+        go_live_date: data.goLiveDate ?? null,
+        communication_start_date: data.communicationStartDate ?? null,
+        assessment_end_date: data.assessmentEndDate ?? null,
         updated_at: new Date().toISOString(),
       })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return toCamelProject(project);
+  },
+
+  async toggleStatus(id: number, status: "active" | "inactive") {
+    const { data: project, error } = await supabase
+      .from("projects")
+      .update({ status, updated_at: new Date().toISOString() })
       .eq("id", id)
       .select()
       .single();
@@ -312,7 +408,7 @@ export const projectService = {
     return toCamelProject(updated);
   },
 
-  async uploadFieldDocument(projectId: number, field: "bcip" | "logic" | "strategy", file: File) {
+  async uploadFieldDocument(projectId: number, field: FieldDocKey, file: File) {
     const filePath = `${projectId}/${field}/${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from("project-documents")
@@ -320,8 +416,8 @@ export const projectService = {
 
     if (uploadError) throw uploadError;
 
-    const nameCol = `${field}_doc_name` as const;
-    const pathCol = `${field}_doc_path` as const;
+    const nameCol = `${field}_doc_name`;
+    const pathCol = `${field}_doc_path`;
 
     const { data: project, error } = await supabase
       .from("projects")
@@ -338,19 +434,20 @@ export const projectService = {
     return toCamelProject(project);
   },
 
-  async downloadFieldDocument(projectId: number, field: "bcip" | "logic" | "strategy") {
+  async downloadFieldDocument(projectId: number, field: FieldDocKey) {
     const nameCol = `${field}_doc_name`;
     const pathCol = `${field}_doc_path`;
 
     const { data: project, error } = await supabase
       .from("projects")
-      .select(`${nameCol}, ${pathCol}`)
+      .select("*")
       .eq("id", projectId)
       .single();
 
     if (error) throw error;
-    const docName = (project as Record<string, string | null>)[nameCol];
-    const docPath = (project as Record<string, string | null>)[pathCol];
+    const rec = project as unknown as Record<string, string | null>;
+    const docName = rec[nameCol];
+    const docPath = rec[pathCol];
 
     if (!docPath || !docName) throw new Error("No document attached");
 
@@ -362,16 +459,16 @@ export const projectService = {
     return { blob: fileData, name: docName };
   },
 
-  async deleteFieldDocument(projectId: number, field: "bcip" | "logic" | "strategy") {
+  async deleteFieldDocument(projectId: number, field: FieldDocKey) {
     const pathCol = `${field}_doc_path`;
 
     const { data: project } = await supabase
       .from("projects")
-      .select(pathCol)
+      .select("*")
       .eq("id", projectId)
       .single();
 
-    const docPath = (project as Record<string, string | null> | null)?.[pathCol];
+    const docPath = (project as unknown as Record<string, string | null> | null)?.[pathCol];
     if (docPath) {
       await supabase.storage.from("project-documents").remove([docPath]);
     }
@@ -432,32 +529,152 @@ export const messageService = {
   },
 };
 
+export const concernService = {
+  async create(data: {
+    surveyId?: number | null;
+    projectId?: number | null;
+    stakeholderName: string;
+    concernText: string;
+  }) {
+    const { data: concern, error } = await supabase
+      .from("concerns")
+      .insert({
+        survey_id: data.surveyId ?? null,
+        project_id: data.projectId ?? null,
+        stakeholder_name: data.stakeholderName,
+        concern_text: data.concernText,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return toCamelConcern(concern);
+  },
+
+  async getAll() {
+    const { data, error } = await supabase
+      .from("concerns")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return { concerns: (data || []).map(toCamelConcern) };
+  },
+
+  async getById(id: number) {
+    const { data, error } = await supabase
+      .from("concerns")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    return toCamelConcern(data);
+  },
+
+  async assignToSme(id: number, smeEmail: string, smeName: string) {
+    const { data: concern, error } = await supabase
+      .from("concerns")
+      .update({
+        assigned_to_sme_email: smeEmail,
+        assigned_to_sme_name: smeName,
+        status: "assigned",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return toCamelConcern(concern);
+  },
+
+  async submitSmeResponse(id: number, response: string) {
+    const { data: concern, error } = await supabase
+      .from("concerns")
+      .update({
+        sme_response: response,
+        status: "responded",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return toCamelConcern(concern);
+  },
+
+  async submitManagerResponse(id: number, response: string) {
+    const { data: concern, error } = await supabase
+      .from("concerns")
+      .update({
+        manager_response: response,
+        status: "resolved",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return toCamelConcern(concern);
+  },
+
+  async resolve(id: number) {
+    const { data: concern, error } = await supabase
+      .from("concerns")
+      .update({
+        status: "resolved",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return toCamelConcern(concern);
+  },
+};
+
 export const dashboardService = {
   async getStats(): Promise<DashboardStats> {
-    const [surveysRes, projectsRes, messagesRes, approvedRes] = await Promise.all([
+    const [surveysRes, projectsRes, messagesRes, approvedRes, concernsRes, openConcernsRes] = await Promise.all([
       supabase.from("surveys").select("*", { count: "exact", head: true }),
       supabase.from("projects").select("*", { count: "exact", head: true }),
       supabase.from("ai_messages").select("*", { count: "exact", head: true }),
       supabase.from("ai_messages").select("*", { count: "exact", head: true }).eq("status", "approved"),
+      supabase.from("concerns").select("*", { count: "exact", head: true }),
+      supabase.from("concerns").select("*", { count: "exact", head: true }).in("status", ["open", "assigned"]),
     ]);
 
-    const { data: surveys } = await supabase.from("surveys").select("mental_model");
+    const { data: surveys } = await supabase.from("surveys").select("mental_model, thinking_focus, orientation");
 
-    const distributionMap: Record<string, number> = {};
+    const modelMap: Record<string, number> = {};
+    const focusMap: Record<string, number> = {};
+    const orientMap: Record<string, number> = {};
     for (const s of surveys || []) {
-      distributionMap[s.mental_model] = (distributionMap[s.mental_model] ?? 0) + 1;
+      modelMap[s.mental_model] = (modelMap[s.mental_model] ?? 0) + 1;
+      focusMap[s.thinking_focus] = (focusMap[s.thinking_focus] ?? 0) + 1;
+      orientMap[s.orientation] = (orientMap[s.orientation] ?? 0) + 1;
     }
-
-    const mentalModelDistribution = Object.entries(distributionMap)
-      .map(([mentalModel, count]) => ({ mentalModel, count }))
-      .sort((a, b) => b.count - a.count);
 
     return {
       totalSurveys: surveysRes.count ?? 0,
       totalProjects: projectsRes.count ?? 0,
       totalMessages: messagesRes.count ?? 0,
       approvedMessages: approvedRes.count ?? 0,
-      mentalModelDistribution,
+      totalConcerns: concernsRes.count ?? 0,
+      openConcerns: openConcernsRes.count ?? 0,
+      mentalModelDistribution: Object.entries(modelMap)
+        .map(([mentalModel, count]) => ({ mentalModel, count }))
+        .sort((a, b) => b.count - a.count),
+      focusAreaDistribution: Object.entries(focusMap)
+        .map(([focusArea, count]) => ({ focusArea, count }))
+        .sort((a, b) => b.count - a.count),
+      orientationDistribution: Object.entries(orientMap)
+        .map(([orientation, count]) => ({ orientation, count }))
+        .sort((a, b) => b.count - a.count),
     };
   },
 };

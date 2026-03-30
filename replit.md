@@ -23,10 +23,12 @@ A change management web application based on the REM16™ framework that maps st
 ### Supabase (Frontend Direct)
 All CRUD operations go directly from the React frontend to Supabase via `@supabase/supabase-js`:
 - Surveys: create, list, get by ID
-- Projects: create, update, list, get by ID
+- Projects: create, update, list, get by ID, toggleStatus (activate/deactivate)
 - AI Messages: list, get by ID, update (status/content)
-- Dashboard Stats: aggregated from surveys/projects/messages
+- Concerns: create, list, get by ID, assignToSme, submitSmeResponse, submitManagerResponse, resolve
+- Dashboard Stats: aggregated from surveys/projects/messages/concerns with focus area + orientation distributions
 - Document Storage: Supabase Storage bucket `project-documents`
+- PDF Text Extraction: pdfjs-dist extracts text from uploaded PDFs into textarea fields
 
 ### Express Server (AI + Email Only)
 The Express API server is kept only for operations requiring server-side secrets:
@@ -54,12 +56,15 @@ artifacts/
       lib/supabase-services.ts  # All CRUD service functions
       lib/rem16.ts              # REM16™ mental model engine (frontend)
       hooks/use-supabase.ts     # React Query hooks for Supabase
+      lib/pdf-extract.ts          # PDF text extraction utility
       pages/
         Home.tsx
         survey/SurveyForm.tsx
         survey/SurveyResult.tsx
         dashboard/ManagerDashboard.tsx
         dashboard/MessageReview.tsx
+        dashboard/ConcernsPage.tsx
+        sme/SmeRespond.tsx
 ```
 
 ## Environment Variables
@@ -87,10 +92,16 @@ artifacts/
 
 ### Manager Dashboard
 - PIN-protected (password: `manager123`)
-- Overview with stats and mental model distribution bar chart
-- Projects management with Supabase Storage document upload
+- Overview with stats cards (surveys, projects, messages, approved, open concerns), mental model bar chart, focus area + orientation pie charts
+- Projects: 5 strategy components (BCIP Canvas, Change Logic, Change Strategy, Communication Plan, Stakeholder Impact) with text + PDF/Word upload + PDF text extraction; key dates (start, go-live, communication start, assessment end); activate/deactivate toggle
 - Survey responses table
 - AI message generation (calls Express), review/edit/approve (Supabase direct)
+- Concerns workflow: log concern, assign to SME, SME response via public link `/sme/respond/:id`, manager direct response, resolve
+
+### Concerns Workflow
+- `/manager/concerns` — full concerns management page (filter by status, create, assign to SME, respond directly)
+- `/sme/respond/:id` — public page for SME to submit response
+- Status flow: open → assigned → responded → resolved
 
 ### AI Message Generation
 Uses OpenAI gpt-5.2 via Replit AI Integrations. Express reads survey + project from Supabase, generates message, saves to Supabase.
@@ -99,7 +110,8 @@ Uses OpenAI gpt-5.2 via Replit AI Integrations. Express reads survey + project f
 
 Run `supabase-migration.sql` in the Supabase SQL Editor to create tables, RLS policies, and storage bucket.
 
-Tables: `surveys`, `projects`, `ai_messages`, `conversations`, `messages`
+Tables: `surveys`, `projects`, `ai_messages`, `conversations`, `messages`, `concerns`
+Additional migration: Run `supabase-add-features.sql` for new project columns + concerns table. Run `supabase-add-field-docs.sql` for comm_plan + impact doc columns.
 Storage: `project-documents` bucket (public)
 RLS: Permissive policies (app uses PIN auth, not Supabase Auth)
 

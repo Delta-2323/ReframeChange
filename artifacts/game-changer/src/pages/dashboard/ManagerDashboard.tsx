@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { 
   Users, Briefcase, FileText, CheckCircle, Plus, Edit, Send, Loader2, Sparkles, MessageSquare, LogOut,
-  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight, Paperclip, Download, FileUp, Trash2
+  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight, Paperclip, Download, FileUp, Trash2,
+  Power, Calendar, ClipboardList
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -13,10 +14,12 @@ import { ManagerAuth } from "./ManagerAuth";
 import { useManagerAuth } from "@/hooks/use-manager-auth";
 import { 
   useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, 
-  useCreateProject, useUpdateProject,
+  useCreateProject, useUpdateProject, useToggleProjectStatus,
   projectKeys, messageKeys, dashboardKeys
 } from "@/hooks/use-supabase";
 import { projectService } from "@/lib/supabase-services";
+import type { FieldDocKey } from "@/lib/supabase-services";
+import { extractTextFromPdf } from "@/lib/pdf-extract";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -201,6 +204,7 @@ function AiSummaryCard() {
 
 function OverviewTab() {
   const { data: stats, isLoading } = useGetDashboardStats();
+  const [, setLocation] = useLocation();
 
   if (isLoading || !stats) {
     return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -211,11 +215,15 @@ function OverviewTab() {
     count: d.count
   }));
 
+  const focusPieData = stats.focusAreaDistribution.map(d => ({ name: d.focusArea, value: d.count }));
+  const orientPieData = stats.orientationDistribution.map(d => ({ name: d.orientation, value: d.count }));
+
   const COLORS = ['#0f172a', '#1e293b', '#334155', '#475569', '#14b8a6', '#0d9488', '#0f766e'];
+  const PIE_COLORS = ['#0f172a', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="shadow-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Surveys</CardTitle>
@@ -236,7 +244,7 @@ function OverviewTab() {
         </Card>
         <Card className="shadow-sm border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">AI Messages Generated</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">AI Messages</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -250,6 +258,16 @@ function OverviewTab() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-teal-600">{stats.approvedMessages}</div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm border-border/50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setLocation("/manager/concerns")}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Open Concerns</CardTitle>
+            <ClipboardList className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-amber-600">{stats.openConcerns}</div>
+            <p className="text-xs text-muted-foreground mt-1">{stats.totalConcerns} total</p>
           </CardContent>
         </Card>
       </div>
@@ -280,7 +298,7 @@ function OverviewTab() {
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {chartData.map((entry, index) => (
+                  {chartData.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>
@@ -289,6 +307,49 @@ function OverviewTab() {
           </div>
         </CardContent>
       </Card>
+
+      {(focusPieData.length > 0 || orientPieData.length > 0) && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {focusPieData.length > 0 && (
+            <Card className="shadow-sm border-border/50">
+              <CardHeader>
+                <CardTitle className="text-base">Thinking Focus Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={focusPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        {focusPieData.map((_e, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                      </Pie>
+                      <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {orientPieData.length > 0 && (
+            <Card className="shadow-sm border-border/50">
+              <CardHeader>
+                <CardTitle className="text-base">Orientation Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={orientPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        {orientPieData.map((_e, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                      </Pie>
+                      <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -404,12 +465,18 @@ function ProjectDocumentUpload({ projectId, documentName }: { projectId: number;
 }
 
 type ProjectFormData = {
-  name: string; bcipCanvas: string; changeLogic: string; changeStrategy: string; managerName: string;
+  name: string; bcipCanvas: string; changeLogic: string; changeStrategy: string;
+  communicationPlan: string; stakeholderImpact: string; managerName: string;
+  startDate: string; goLiveDate: string; communicationStartDate: string; assessmentEndDate: string;
   bcipFile: File | null; logicFile: File | null; strategyFile: File | null;
+  commPlanFile: File | null; impactFile: File | null;
 };
 const EMPTY_FORM: ProjectFormData = {
-  name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '', managerName: '',
+  name: '', bcipCanvas: '', changeLogic: '', changeStrategy: '',
+  communicationPlan: '', stakeholderImpact: '', managerName: '',
+  startDate: '', goLiveDate: '', communicationStartDate: '', assessmentEndDate: '',
   bcipFile: null, logicFile: null, strategyFile: null,
+  commPlanFile: null, impactFile: null,
 };
 
 const ALLOWED_FILE_TYPES = [
@@ -477,11 +544,43 @@ function InlineFileUpload({ file, onSelect, onRemove }: { file: File | null; onS
 
 function ProjectForm({ formData, onChange }: { formData: ProjectFormData; onChange: (d: ProjectFormData) => void }) {
   const { toast } = useToast();
+  const [extracting, setExtracting] = useState<string | null>(null);
 
-  const handleFieldFile = (field: "bcipFile" | "logicFile" | "strategyFile", file: File) => {
+  type FileField = "bcipFile" | "logicFile" | "strategyFile" | "commPlanFile" | "impactFile";
+  type TextField = "bcipCanvas" | "changeLogic" | "changeStrategy" | "communicationPlan" | "stakeholderImpact";
+
+  const handleFieldFile = async (fileField: FileField, textField: TextField, file: File) => {
     if (!validateFile(file, toast)) return;
-    onChange({ ...formData, [field]: file });
+    onChange({ ...formData, [fileField]: file });
+
+    if (file.type === "application/pdf") {
+      setExtracting(fileField);
+      try {
+        const text = await extractTextFromPdf(file);
+        if (text.trim()) {
+          const current = formData[textField];
+          onChange({
+            ...formData,
+            [fileField]: file,
+            [textField]: current ? current + "\n\n--- Extracted from PDF ---\n" + text : text,
+          });
+          toast({ title: "PDF text extracted", description: "Text has been added to the field." });
+        }
+      } catch {
+        toast({ title: "Could not extract PDF text", description: "The file was attached but text could not be read.", variant: "destructive" });
+      } finally {
+        setExtracting(null);
+      }
+    }
   };
+
+  const strategyFields: { label: string; textField: TextField; fileField: FileField; placeholder: string }[] = [
+    { label: "BCIP Canvas (Context)", textField: "bcipCanvas", fileField: "bcipFile", placeholder: "Paste background context..." },
+    { label: "Change Logic", textField: "changeLogic", fileField: "logicFile", placeholder: "Why are we doing this?..." },
+    { label: "Change Strategy", textField: "changeStrategy", fileField: "strategyFile", placeholder: "How will we implement this?..." },
+    { label: "Communication Plan", textField: "communicationPlan", fileField: "commPlanFile", placeholder: "Communication approach and channels..." },
+    { label: "Stakeholder Impact", textField: "stakeholderImpact", fileField: "impactFile", placeholder: "How will stakeholders be impacted?..." },
+  ];
 
   return (
     <div className="space-y-4 py-4">
@@ -493,33 +592,45 @@ function ProjectForm({ formData, onChange }: { formData: ProjectFormData; onChan
         <Label>Manager Name</Label>
         <Input value={formData.managerName} onChange={e => onChange({...formData, managerName: e.target.value})} placeholder="John Smith" />
       </div>
-      <div className="space-y-2">
-        <Label>BCIP Canvas (Context)</Label>
-        <Textarea rows={3} value={formData.bcipCanvas} onChange={e => onChange({...formData, bcipCanvas: e.target.value})} placeholder="Paste background context..." />
-        <InlineFileUpload
-          file={formData.bcipFile}
-          onSelect={(f) => handleFieldFile("bcipFile", f)}
-          onRemove={() => onChange({ ...formData, bcipFile: null })}
-        />
+
+      <div className="border rounded-lg p-4 space-y-2 bg-muted/20">
+        <Label className="text-sm font-semibold flex items-center gap-2"><Calendar className="h-4 w-4" /> Key Dates</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Start Date</Label>
+            <Input type="date" value={formData.startDate} onChange={e => onChange({...formData, startDate: e.target.value})} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Go-Live Date</Label>
+            <Input type="date" value={formData.goLiveDate} onChange={e => onChange({...formData, goLiveDate: e.target.value})} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Communication Start</Label>
+            <Input type="date" value={formData.communicationStartDate} onChange={e => onChange({...formData, communicationStartDate: e.target.value})} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Assessment End</Label>
+            <Input type="date" value={formData.assessmentEndDate} onChange={e => onChange({...formData, assessmentEndDate: e.target.value})} />
+          </div>
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label>Change Logic</Label>
-        <Textarea rows={3} value={formData.changeLogic} onChange={e => onChange({...formData, changeLogic: e.target.value})} placeholder="Why are we doing this?..." />
-        <InlineFileUpload
-          file={formData.logicFile}
-          onSelect={(f) => handleFieldFile("logicFile", f)}
-          onRemove={() => onChange({ ...formData, logicFile: null })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Change Strategy</Label>
-        <Textarea rows={3} value={formData.changeStrategy} onChange={e => onChange({...formData, changeStrategy: e.target.value})} placeholder="How will we implement this?..." />
-        <InlineFileUpload
-          file={formData.strategyFile}
-          onSelect={(f) => handleFieldFile("strategyFile", f)}
-          onRemove={() => onChange({ ...formData, strategyFile: null })}
-        />
-      </div>
+
+      {strategyFields.map(({ label, textField, fileField, placeholder }) => (
+        <div key={textField} className="space-y-2">
+          <Label>{label}</Label>
+          <Textarea rows={3} value={formData[textField]} onChange={e => onChange({...formData, [textField]: e.target.value})} placeholder={placeholder} />
+          {extracting === fileField && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Extracting text from PDF...
+            </div>
+          )}
+          <InlineFileUpload
+            file={formData[fileField]}
+            onSelect={(f) => handleFieldFile(fileField, textField, f)}
+            onRemove={() => onChange({ ...formData, [fileField]: null })}
+          />
+        </div>
+      ))}
     </div>
   );
 }
@@ -528,6 +639,7 @@ function ProjectsTab() {
   const { data, isLoading } = useGetProjects();
   const createMutation = useCreateProject();
   const updateMutation = useUpdateProject();
+  const toggleMutation = useToggleProjectStatus();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -540,10 +652,12 @@ function ProjectsTab() {
   const [editForm, setEditForm] = useState<ProjectFormData>(EMPTY_FORM);
 
   const uploadFieldFiles = async (projectId: number, form: ProjectFormData) => {
-    const uploads: { field: "bcip" | "logic" | "strategy"; file: File }[] = [];
+    const uploads: { field: FieldDocKey; file: File }[] = [];
     if (form.bcipFile) uploads.push({ field: "bcip", file: form.bcipFile });
     if (form.logicFile) uploads.push({ field: "logic", file: form.logicFile });
     if (form.strategyFile) uploads.push({ field: "strategy", file: form.strategyFile });
+    if (form.commPlanFile) uploads.push({ field: "comm_plan", file: form.commPlanFile });
+    if (form.impactFile) uploads.push({ field: "impact", file: form.impactFile });
 
     const failed: string[] = [];
     for (const { field, file } of uploads) {
@@ -560,8 +674,15 @@ function ProjectsTab() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const { bcipFile, logicFile, strategyFile, ...formFields } = createForm;
-      const project = await createMutation.mutateAsync(formFields);
+      const { bcipFile, logicFile, strategyFile, commPlanFile, impactFile, ...formFields } = createForm;
+      void bcipFile; void logicFile; void strategyFile; void commPlanFile; void impactFile;
+      const project = await createMutation.mutateAsync({
+        ...formFields,
+        startDate: formFields.startDate || null,
+        goLiveDate: formFields.goLiveDate || null,
+        communicationStartDate: formFields.communicationStartDate || null,
+        assessmentEndDate: formFields.assessmentEndDate || null,
+      });
       const { total, failed } = await uploadFieldFiles(project.id, createForm);
       if (failed.length > 0) {
         toast({ title: "Project created, but some uploads failed", description: `Failed: ${failed.join(", ")}. You can re-upload from the project card.`, variant: "destructive" });
@@ -571,6 +692,7 @@ function ProjectsTab() {
         toast({ title: "Project Created!" });
       }
       queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats });
       setCreateOpen(false);
       setCreateForm(EMPTY_FORM);
     } catch {
@@ -580,15 +702,22 @@ function ProjectsTab() {
     }
   };
 
-  const handleEditOpen = (project: { id: number; name: string; bcipCanvas?: string | null; changeLogic?: string | null; changeStrategy?: string | null; managerName?: string | null }) => {
+  const handleEditOpen = (project: NonNullable<typeof data>["projects"][number]) => {
     setEditProjectId(project.id);
     setEditForm({
       name: project.name,
       bcipCanvas: project.bcipCanvas ?? '',
       changeLogic: project.changeLogic ?? '',
       changeStrategy: project.changeStrategy ?? '',
+      communicationPlan: project.communicationPlan ?? '',
+      stakeholderImpact: project.stakeholderImpact ?? '',
       managerName: project.managerName ?? '',
+      startDate: project.startDate ?? '',
+      goLiveDate: project.goLiveDate ?? '',
+      communicationStartDate: project.communicationStartDate ?? '',
+      assessmentEndDate: project.assessmentEndDate ?? '',
       bcipFile: null, logicFile: null, strategyFile: null,
+      commPlanFile: null, impactFile: null,
     });
     setEditOpen(true);
   };
@@ -598,8 +727,18 @@ function ProjectsTab() {
     if (!editProjectId) return;
     setIsSubmitting(true);
     try {
-      const { bcipFile, logicFile, strategyFile, ...formFields } = editForm;
-      await updateMutation.mutateAsync({ id: editProjectId, data: formFields });
+      const { bcipFile, logicFile, strategyFile, commPlanFile, impactFile, ...formFields } = editForm;
+      void bcipFile; void logicFile; void strategyFile; void commPlanFile; void impactFile;
+      await updateMutation.mutateAsync({
+        id: editProjectId,
+        data: {
+          ...formFields,
+          startDate: formFields.startDate || null,
+          goLiveDate: formFields.goLiveDate || null,
+          communicationStartDate: formFields.communicationStartDate || null,
+          assessmentEndDate: formFields.assessmentEndDate || null,
+        },
+      });
       const { total, failed } = await uploadFieldFiles(editProjectId, editForm);
       if (failed.length > 0) {
         toast({ title: "Project updated, but some uploads failed", description: `Failed: ${failed.join(", ")}. You can re-upload from the project card.`, variant: "destructive" });
@@ -617,13 +756,25 @@ function ProjectsTab() {
     }
   };
 
+  const handleToggle = async (project: { id: number; status: string }) => {
+    const newStatus = project.status === "active" ? "inactive" : "active";
+    try {
+      await toggleMutation.mutateAsync({ id: project.id, status: newStatus });
+      toast({ title: `Project ${newStatus === "active" ? "activated" : "deactivated"}` });
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats });
+    } catch {
+      toast({ title: "Error updating status", variant: "destructive" });
+    }
+  };
+
   if (isLoading) return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-2xl font-bold">Active Projects</h3>
+          <h3 className="text-2xl font-bold">Projects</h3>
           <p className="text-muted-foreground">Manage context for organizational changes.</p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -670,31 +821,57 @@ function ProjectsTab() {
             No projects created yet. Create one to get started.
           </div>
         )}
-        {data?.projects.map(project => (
-          <Card key={project.id} className="shadow-sm border-border/50 hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <CardTitle>{project.name}</CardTitle>
-              <CardDescription>Managed by {project.managerName || 'Unassigned'}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground mb-4 space-y-1">
-                <p>Created: {format(new Date(project.createdAt), 'MMM d, yyyy')}</p>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  {(project.bcipCanvas || project.bcipDocName) && <Badge variant="secondary" className="bg-secondary/10 text-secondary hover:bg-secondary/20 border-0">{project.bcipDocName ? <><Paperclip className="h-3 w-3 mr-0.5" />BCIP</> : "BCIP"}</Badge>}
-                  {(project.changeLogic || project.logicDocName) && <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-0">{project.logicDocName ? <><Paperclip className="h-3 w-3 mr-0.5" />Logic</> : "Logic"}</Badge>}
-                  {(project.changeStrategy || project.strategyDocName) && <Badge variant="secondary" className="bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 border-0">{project.strategyDocName ? <><Paperclip className="h-3 w-3 mr-0.5" />Strategy</> : "Strategy"}</Badge>}
+        {data?.projects.map(project => {
+          const isActive = project.status === "active";
+          return (
+            <Card key={project.id} className={`shadow-sm border-border/50 hover:shadow-md transition-shadow ${!isActive ? "opacity-60" : ""}`}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <CardTitle className="truncate">{project.name}</CardTitle>
+                    <CardDescription>Managed by {project.managerName || 'Unassigned'}</CardDescription>
+                  </div>
+                  <Badge className={isActive ? "bg-green-100 text-green-800 border-0" : "bg-gray-100 text-gray-600 border-0"}>
+                    {isActive ? "Active" : "Inactive"}
+                  </Badge>
                 </div>
-              </div>
-              <Button variant="outline" className="w-full" size="sm" onClick={() => handleEditOpen(project)}>
-                <Edit className="mr-2 h-3.5 w-3.5" /> Edit Context
-              </Button>
-              <ProjectDocumentUpload
-                projectId={project.id}
-                documentName={project.documentName}
-              />
-            </CardContent>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground mb-4 space-y-2">
+                  <p>Created: {format(new Date(project.createdAt), 'MMM d, yyyy')}</p>
+                  {project.startDate && <p className="text-xs">Start: {format(new Date(project.startDate), 'MMM d, yyyy')}</p>}
+                  {project.goLiveDate && <p className="text-xs">Go-Live: {format(new Date(project.goLiveDate), 'MMM d, yyyy')}</p>}
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {(project.bcipCanvas || project.bcipDocName) && <Badge variant="secondary" className="bg-secondary/10 text-secondary hover:bg-secondary/20 border-0 text-[10px] px-1.5">{project.bcipDocName ? <><Paperclip className="h-2.5 w-2.5 mr-0.5" />BCIP</> : "BCIP"}</Badge>}
+                    {(project.changeLogic || project.logicDocName) && <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-0 text-[10px] px-1.5">{project.logicDocName ? <><Paperclip className="h-2.5 w-2.5 mr-0.5" />Logic</> : "Logic"}</Badge>}
+                    {(project.changeStrategy || project.strategyDocName) && <Badge variant="secondary" className="bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 border-0 text-[10px] px-1.5">{project.strategyDocName ? <><Paperclip className="h-2.5 w-2.5 mr-0.5" />Strategy</> : "Strategy"}</Badge>}
+                    {(project.communicationPlan || project.commPlanDocName) && <Badge variant="secondary" className="bg-violet-500/10 text-violet-700 hover:bg-violet-500/20 border-0 text-[10px] px-1.5">{project.commPlanDocName ? <><Paperclip className="h-2.5 w-2.5 mr-0.5" />Comm Plan</> : "Comm Plan"}</Badge>}
+                    {(project.stakeholderImpact || project.impactDocName) && <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 border-0 text-[10px] px-1.5">{project.impactDocName ? <><Paperclip className="h-2.5 w-2.5 mr-0.5" />Impact</> : "Impact"}</Badge>}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" size="sm" onClick={() => handleEditOpen(project)}>
+                    <Edit className="mr-1.5 h-3.5 w-3.5" /> Edit
+                  </Button>
+                  <Button
+                    variant={isActive ? "outline" : "default"}
+                    size="sm"
+                    onClick={() => handleToggle(project)}
+                    disabled={toggleMutation.isPending}
+                    className={`gap-1.5 ${isActive ? "text-muted-foreground hover:text-destructive" : ""}`}
+                  >
+                    <Power className="h-3.5 w-3.5" />
+                    {isActive ? "Deactivate" : "Activate"}
+                  </Button>
+                </div>
+                <ProjectDocumentUpload
+                  projectId={project.id}
+                  documentName={project.documentName}
+                />
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
@@ -958,6 +1135,31 @@ function MessagesTab() {
   );
 }
 
+function ConcernsTabInline() {
+  const [, setLocation] = useLocation();
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-2xl font-bold">Stakeholder Concerns</h3>
+          <p className="text-muted-foreground">Track, assign, and resolve stakeholder concerns.</p>
+        </div>
+        <Button onClick={() => setLocation("/manager/concerns")} className="gap-2">
+          <ClipboardList className="h-4 w-4" /> Open Full View
+        </Button>
+      </div>
+      <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed rounded-2xl text-center bg-muted/20">
+        <ClipboardList className="h-10 w-10 text-muted-foreground mb-4" />
+        <h4 className="text-lg font-semibold mb-2">Manage Concerns</h4>
+        <p className="text-muted-foreground text-sm max-w-sm mb-4">
+          Log, assign to subject matter experts, and resolve stakeholder concerns from the dedicated concerns page.
+        </p>
+        <Button onClick={() => setLocation("/manager/concerns")}>Go to Concerns</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function ManagerDashboard() {
   const { isAuthed, isChecking, logout, login } = useManagerAuth();
 
@@ -1002,6 +1204,7 @@ export default function ManagerDashboard() {
                 { value: "projects", label: "Projects" },
                 { value: "surveys", label: "Surveys" },
                 { value: "messages", label: "Messages" },
+                { value: "concerns", label: "Concerns" },
               ].map(tab => (
                 <TabsTrigger
                   key={tab.value}
@@ -1018,6 +1221,7 @@ export default function ManagerDashboard() {
           <TabsContent value="projects"><ProjectsTab /></TabsContent>
           <TabsContent value="surveys"><SurveysTab /></TabsContent>
           <TabsContent value="messages"><MessagesTab /></TabsContent>
+          <TabsContent value="concerns"><ConcernsTabInline /></TabsContent>
         </Tabs>
       </main>
     </div>

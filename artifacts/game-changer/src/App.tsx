@@ -8,13 +8,15 @@ import SurveyForm from "@/pages/survey/SurveyForm";
 import SurveyResult from "@/pages/survey/SurveyResult";
 import ManagerDashboard from "@/pages/dashboard/ManagerDashboard";
 import MessageReview from "@/pages/dashboard/MessageReview";
+import ConcernsPage from "@/pages/dashboard/ConcernsPage";
+import SmeRespond from "@/pages/sme/SmeRespond";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5,
     }
   }
 });
@@ -28,6 +30,9 @@ function Router() {
       
       <Route path="/manager" component={ManagerDashboard} />
       <Route path="/manager/messages/:id" component={MessageReview} />
+      <Route path="/manager/concerns" component={ConcernsPage} />
+      
+      <Route path="/sme/respond/:id" component={SmeRespond} />
       
       <Route component={NotFound} />
     </Switch>
