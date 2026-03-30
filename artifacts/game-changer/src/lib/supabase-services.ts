@@ -101,33 +101,33 @@ function toCamelSurvey(s: Survey) {
   };
 }
 
-function toCamelProject(p: Project) {
+function toCamelProject(p: Partial<Project> & { id: number; name: string; created_at: string; updated_at: string }) {
   return {
     id: p.id,
     name: p.name,
-    status: p.status,
-    bcipCanvas: p.bcip_canvas,
-    changeLogic: p.change_logic,
-    changeStrategy: p.change_strategy,
-    communicationPlan: p.communication_plan,
-    stakeholderImpact: p.stakeholder_impact,
-    managerName: p.manager_name,
-    documentName: p.document_name,
-    documentMimeType: p.document_mime_type,
-    bcipDocName: p.bcip_doc_name,
-    bcipDocPath: p.bcip_doc_path,
-    logicDocName: p.logic_doc_name,
-    logicDocPath: p.logic_doc_path,
-    strategyDocName: p.strategy_doc_name,
-    strategyDocPath: p.strategy_doc_path,
-    commPlanDocName: p.comm_plan_doc_name,
-    commPlanDocPath: p.comm_plan_doc_path,
-    impactDocName: p.impact_doc_name,
-    impactDocPath: p.impact_doc_path,
-    startDate: p.start_date,
-    goLiveDate: p.go_live_date,
-    communicationStartDate: p.communication_start_date,
-    assessmentEndDate: p.assessment_end_date,
+    status: p.status ?? "active",
+    bcipCanvas: p.bcip_canvas ?? null,
+    changeLogic: p.change_logic ?? null,
+    changeStrategy: p.change_strategy ?? null,
+    communicationPlan: p.communication_plan ?? null,
+    stakeholderImpact: p.stakeholder_impact ?? null,
+    managerName: p.manager_name ?? null,
+    documentName: p.document_name ?? null,
+    documentMimeType: p.document_mime_type ?? null,
+    bcipDocName: p.bcip_doc_name ?? null,
+    bcipDocPath: p.bcip_doc_path ?? null,
+    logicDocName: p.logic_doc_name ?? null,
+    logicDocPath: p.logic_doc_path ?? null,
+    strategyDocName: p.strategy_doc_name ?? null,
+    strategyDocPath: p.strategy_doc_path ?? null,
+    commPlanDocName: p.comm_plan_doc_name ?? null,
+    commPlanDocPath: p.comm_plan_doc_path ?? null,
+    impactDocName: p.impact_doc_name ?? null,
+    impactDocPath: p.impact_doc_path ?? null,
+    startDate: p.start_date ?? null,
+    goLiveDate: p.go_live_date ?? null,
+    communicationStartDate: p.communication_start_date ?? null,
+    assessmentEndDate: p.assessment_end_date ?? null,
     createdAt: p.created_at,
     updatedAt: p.updated_at,
   };
@@ -239,21 +239,23 @@ export const projectService = {
     communicationStartDate?: string | null;
     assessmentEndDate?: string | null;
   }) {
+    const row: Record<string, unknown> = {
+      name: data.name,
+      bcip_canvas: data.bcipCanvas ?? null,
+      change_logic: data.changeLogic ?? null,
+      change_strategy: data.changeStrategy ?? null,
+      manager_name: data.managerName ?? null,
+    };
+    if (data.communicationPlan) row.communication_plan = data.communicationPlan;
+    if (data.stakeholderImpact) row.stakeholder_impact = data.stakeholderImpact;
+    if (data.startDate) row.start_date = data.startDate;
+    if (data.goLiveDate) row.go_live_date = data.goLiveDate;
+    if (data.communicationStartDate) row.communication_start_date = data.communicationStartDate;
+    if (data.assessmentEndDate) row.assessment_end_date = data.assessmentEndDate;
+
     const { data: project, error } = await supabase
       .from("projects")
-      .insert({
-        name: data.name,
-        bcip_canvas: data.bcipCanvas ?? null,
-        change_logic: data.changeLogic ?? null,
-        change_strategy: data.changeStrategy ?? null,
-        communication_plan: data.communicationPlan ?? null,
-        stakeholder_impact: data.stakeholderImpact ?? null,
-        manager_name: data.managerName ?? null,
-        start_date: data.startDate ?? null,
-        go_live_date: data.goLiveDate ?? null,
-        communication_start_date: data.communicationStartDate ?? null,
-        assessment_end_date: data.assessmentEndDate ?? null,
-      })
+      .insert(row)
       .select()
       .single();
 
@@ -295,22 +297,24 @@ export const projectService = {
     communicationStartDate?: string | null;
     assessmentEndDate?: string | null;
   }) {
+    const row: Record<string, unknown> = {
+      name: data.name,
+      bcip_canvas: data.bcipCanvas ?? null,
+      change_logic: data.changeLogic ?? null,
+      change_strategy: data.changeStrategy ?? null,
+      manager_name: data.managerName ?? null,
+      updated_at: new Date().toISOString(),
+    };
+    if (data.communicationPlan !== undefined) row.communication_plan = data.communicationPlan || null;
+    if (data.stakeholderImpact !== undefined) row.stakeholder_impact = data.stakeholderImpact || null;
+    if (data.startDate !== undefined) row.start_date = data.startDate || null;
+    if (data.goLiveDate !== undefined) row.go_live_date = data.goLiveDate || null;
+    if (data.communicationStartDate !== undefined) row.communication_start_date = data.communicationStartDate || null;
+    if (data.assessmentEndDate !== undefined) row.assessment_end_date = data.assessmentEndDate || null;
+
     const { data: project, error } = await supabase
       .from("projects")
-      .update({
-        name: data.name,
-        bcip_canvas: data.bcipCanvas ?? null,
-        change_logic: data.changeLogic ?? null,
-        change_strategy: data.changeStrategy ?? null,
-        communication_plan: data.communicationPlan ?? null,
-        stakeholder_impact: data.stakeholderImpact ?? null,
-        manager_name: data.managerName ?? null,
-        start_date: data.startDate ?? null,
-        go_live_date: data.goLiveDate ?? null,
-        communication_start_date: data.communicationStartDate ?? null,
-        assessment_end_date: data.assessmentEndDate ?? null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(row)
       .eq("id", id)
       .select()
       .single();
@@ -320,15 +324,19 @@ export const projectService = {
   },
 
   async toggleStatus(id: number, status: "active" | "inactive") {
-    const { data: project, error } = await supabase
-      .from("projects")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .select()
-      .single();
+    try {
+      const { data: project, error } = await supabase
+        .from("projects")
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .select()
+        .single();
 
-    if (error) throw error;
-    return toCamelProject(project);
+      if (error) throw error;
+      return toCamelProject(project);
+    } catch (err) {
+      throw new Error(`Could not toggle status. You may need to run the migration SQL to add the 'status' column. Original: ${err instanceof Error ? err.message : err}`);
+    }
   },
 
   async uploadDocument(projectId: number, file: File) {
@@ -639,14 +647,24 @@ export const concernService = {
 
 export const dashboardService = {
   async getStats(): Promise<DashboardStats> {
-    const [surveysRes, projectsRes, messagesRes, approvedRes, concernsRes, openConcernsRes] = await Promise.all([
+    const [surveysRes, projectsRes, messagesRes, approvedRes] = await Promise.all([
       supabase.from("surveys").select("*", { count: "exact", head: true }),
       supabase.from("projects").select("*", { count: "exact", head: true }),
       supabase.from("ai_messages").select("*", { count: "exact", head: true }),
       supabase.from("ai_messages").select("*", { count: "exact", head: true }).eq("status", "approved"),
-      supabase.from("concerns").select("*", { count: "exact", head: true }),
-      supabase.from("concerns").select("*", { count: "exact", head: true }).in("status", ["open", "assigned"]),
     ]);
+
+    let concernsCount = 0;
+    let openConcernsCount = 0;
+    try {
+      const [concernsRes, openConcernsRes] = await Promise.all([
+        supabase.from("concerns").select("*", { count: "exact", head: true }),
+        supabase.from("concerns").select("*", { count: "exact", head: true }).in("status", ["open", "assigned"]),
+      ]);
+      concernsCount = concernsRes.count ?? 0;
+      openConcernsCount = openConcernsRes.count ?? 0;
+    } catch {
+    }
 
     const { data: surveys } = await supabase.from("surveys").select("mental_model, thinking_focus, orientation");
 
@@ -664,8 +682,8 @@ export const dashboardService = {
       totalProjects: projectsRes.count ?? 0,
       totalMessages: messagesRes.count ?? 0,
       approvedMessages: approvedRes.count ?? 0,
-      totalConcerns: concernsRes.count ?? 0,
-      openConcerns: openConcernsRes.count ?? 0,
+      totalConcerns: concernsCount,
+      openConcerns: openConcernsCount,
       mentalModelDistribution: Object.entries(modelMap)
         .map(([mentalModel, count]) => ({ mentalModel, count }))
         .sort((a, b) => b.count - a.count),
