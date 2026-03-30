@@ -215,7 +215,7 @@ function OverviewTab() {
     count: d.count
   }));
 
-  const focusPieData = stats.focusAreaDistribution.map(d => ({ name: d.focusArea, value: d.count }));
+  const focusPieData = stats.focusAreaDistribution.map((d: { area?: string; focusArea?: string; count: number }) => ({ name: d.area || d.focusArea || "Unknown", value: d.count }));
   const orientPieData = stats.orientationDistribution.map(d => ({ name: d.orientation, value: d.count }));
 
   const COLORS = ['#0f172a', '#1e293b', '#334155', '#475569', '#14b8a6', '#0d9488', '#0f766e'];

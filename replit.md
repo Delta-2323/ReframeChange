@@ -8,55 +8,46 @@ A change management web application based on the REM16™ framework that maps st
 
 - **Monorepo tool**: pnpm workspaces
 - **Node.js version**: 24
-- **Package manager**: pnpm
+- **Python version**: 3.12
+- **Package manager**: pnpm (frontend), pip/uv (Python backend)
 - **TypeScript version**: 5.9
 - **Frontend**: React + Vite (artifacts/game-changer)
-- **API framework**: Express 5 (artifacts/api-server) — AI generation + email only
-- **Database**: Supabase PostgreSQL (direct client from frontend)
+- **API framework**: Python Flask (artifacts/api-server/app.py)
+- **Database**: Supabase PostgreSQL (accessed via supabase-py from Python backend)
 - **Storage**: Supabase Storage (project documents)
 - **AI Integration**: Replit AI Integrations → OpenAI (gpt-5.2)
 - **Charts**: Recharts (mental model distribution)
 - **Forms**: react-hook-form + @hookform/resolvers + zod
+- **PDF Extraction**: pdfjs-dist (frontend)
 
 ## Architecture
 
-### Supabase (Frontend Direct)
-All CRUD operations go directly from the React frontend to Supabase via `@supabase/supabase-js`:
-- Surveys: create, list, get by ID
-- Projects: create, update, list, get by ID, toggleStatus (activate/deactivate)
-- AI Messages: list, get by ID, update (status/content)
-- Concerns: create, list, get by ID, assignToSme, submitSmeResponse, submitManagerResponse, resolve
-- Dashboard Stats: aggregated from surveys/projects/messages/concerns with focus area + orientation distributions
-- Document Storage: Supabase Storage bucket `project-documents`
-- PDF Text Extraction: pdfjs-dist extracts text from uploaded PDFs into textarea fields
+### Python Flask API Server (All Backend Logic)
+All operations go through the Python Flask API at `/api/*`:
+- **Projects**: CRUD, activate/deactivate toggle, document upload/download/delete, field document management
+- **Surveys**: submit (with REM16™ mental model computation), list, get by ID
+- **AI Messages**: generate (OpenAI), list, get, update, send email (Gmail SMTP)
+- **Concerns**: create, list, assign to SME, SME response, manager response, resolve
+- **Dashboard**: stats aggregation, AI-powered strategic summary
 
-### Express Server (AI + Email Only)
-The Express API server is kept only for operations requiring server-side secrets:
-- `POST /api/messages` — AI message generation (needs OpenAI key)
-- `POST /api/messages/:id/send-email` — email sending (needs Gmail credentials)
-- `POST /api/dashboard/ai-summary` — AI landscape analysis (needs OpenAI key)
+### React Frontend
+The React frontend calls the Python API for all operations via `fetch()`. No direct Supabase client calls from the browser.
 
 ### REM16™ Logic
-The mental model computation (`rem16.ts`) runs entirely on the frontend — no server call needed for survey classification.
+The mental model computation runs on both frontend (`rem16.ts` for display) and backend (`app.py` for survey submission).
 
 ## Structure
 
 ```text
 artifacts/
-  api-server/          # Express API (AI + email only)
-    src/
-      lib/supabase.ts  # Server-side Supabase client
-      lib/email.ts     # Nodemailer + Gmail
-      routes/
-        aiMessages.ts  # AI generation + email sending
-        dashboard.ts   # AI summary generation
+  api-server/          # Python Flask API server
+    app.py             # All routes: projects, surveys, messages, concerns, dashboard
   game-changer/        # React + Vite frontend
     src/
-      lib/supabase.ts           # Frontend Supabase client
-      lib/supabase-services.ts  # All CRUD service functions
-      lib/rem16.ts              # REM16™ mental model engine (frontend)
-      hooks/use-supabase.ts     # React Query hooks for Supabase
-      lib/pdf-extract.ts          # PDF text extraction utility
+      lib/supabase-services.ts  # API client (fetch calls to Python backend)
+      lib/rem16.ts              # REM16™ mental model engine (frontend display)
+      lib/pdf-extract.ts        # PDF text extraction utility
+      hooks/use-supabase.ts     # React Query hooks
       pages/
         Home.tsx
         survey/SurveyForm.tsx
@@ -70,12 +61,14 @@ artifacts/
 ## Environment Variables
 
 ### Frontend (Vite)
-- `VITE_SUPABASE_URL` — Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` — Supabase anon/public key
+- `VITE_SUPABASE_URL` — Supabase project URL (still needed for supabase.ts import)
+- `VITE_SUPABASE_ANON_KEY` — Supabase anon/public key (still needed for supabase.ts import)
 
-### Server
+### Server (Python)
 - `SUPABASE_URL` — Supabase project URL
 - `SUPABASE_ANON_KEY` — Supabase anon key
+- `AI_INTEGRATIONS_OPENAI_BASE_URL` — Replit AI Integrations OpenAI proxy URL
+- `AI_INTEGRATIONS_OPENAI_API_KEY` — Replit AI Integrations API key
 - `GMAIL_FROM_EMAIL` — Gmail sender address
 - `GMAIL_APP_PASSWORD` — Gmail App Password (Secret)
 
@@ -88,14 +81,14 @@ artifacts/
 - **Change Role**: Rockstar | Roadie
 
 ### Stakeholder Survey
-4-question multi-step form with progress indicator. Mental model computed on frontend via `rem16.ts`, saved directly to Supabase.
+4-question multi-step form with progress indicator. Mental model computed on both frontend and backend.
 
 ### Manager Dashboard
 - PIN-protected (password: `manager123`)
 - Overview with stats cards (surveys, projects, messages, approved, open concerns), mental model bar chart, focus area + orientation pie charts
 - Projects: 5 strategy components (BCIP Canvas, Change Logic, Change Strategy, Communication Plan, Stakeholder Impact) with text + PDF/Word upload + PDF text extraction; key dates (start, go-live, communication start, assessment end); activate/deactivate toggle
 - Survey responses table
-- AI message generation (calls Express), review/edit/approve (Supabase direct)
+- AI message generation, review/edit/approve
 - Concerns workflow: log concern, assign to SME, SME response via public link `/sme/respond/:id`, manager direct response, resolve
 
 ### Concerns Workflow
@@ -104,7 +97,7 @@ artifacts/
 - Status flow: open → assigned → responded → resolved
 
 ### AI Message Generation
-Uses OpenAI gpt-5.2 via Replit AI Integrations. Express reads survey + project from Supabase, generates message, saves to Supabase.
+Uses OpenAI gpt-5.2 via Replit AI Integrations. Python backend reads survey + project from Supabase, generates message, saves to Supabase.
 
 ## Supabase Setup
 
@@ -118,6 +111,43 @@ RLS: Permissive policies (app uses PIN auth, not Supabase Auth)
 ## Development
 
 ```bash
-pnpm --filter @workspace/game-changer run dev   # Frontend (port 19819)
-pnpm --filter @workspace/api-server run dev      # API (port 8080)
+# Frontend (auto-assigned port)
+pnpm --filter @workspace/game-changer run dev
+
+# Python API server (port 8080)
+PORT=8080 python3 artifacts/api-server/app.py
 ```
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/healthz | Health check |
+| POST | /api/projects | Create project |
+| GET | /api/projects | List projects |
+| GET | /api/projects/:id | Get project |
+| PUT | /api/projects/:id | Update project |
+| PATCH | /api/projects/:id/status | Toggle active/inactive |
+| POST | /api/projects/:id/document | Upload document |
+| GET | /api/projects/:id/document | Download document |
+| DELETE | /api/projects/:id/document | Delete document |
+| POST | /api/projects/:id/field-document | Upload field document |
+| GET | /api/projects/:id/field-document/:field | Download field document |
+| DELETE | /api/projects/:id/field-document/:field | Delete field document |
+| POST | /api/surveys | Submit survey |
+| GET | /api/surveys | List surveys |
+| GET | /api/surveys/:id | Get survey |
+| POST | /api/messages | Generate AI message |
+| GET | /api/messages | List messages |
+| GET | /api/messages/:id | Get message |
+| PUT | /api/messages/:id | Update message |
+| POST | /api/messages/:id/send-email | Send email |
+| GET | /api/dashboard/stats | Dashboard stats |
+| POST | /api/dashboard/ai-summary | AI strategic summary |
+| POST | /api/concerns | Create concern |
+| GET | /api/concerns | List concerns |
+| GET | /api/concerns/:id | Get concern |
+| PATCH | /api/concerns/:id/assign | Assign to SME |
+| PATCH | /api/concerns/:id/sme-response | SME response |
+| PATCH | /api/concerns/:id/manager-response | Manager response |
+| PATCH | /api/concerns/:id/resolve | Resolve concern |
