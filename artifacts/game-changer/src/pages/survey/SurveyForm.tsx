@@ -12,30 +12,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 
 const DEPARTMENTS = [
-  "HR", "IT", "Finance", "Marketing", "Sales", "Operations",
-  "Customer Service", "Administration", "Engineering", "Product", "Other",
+  "HR",
+  "IT",
+  "Finance",
+  "Marketing",
+  "Sales",
+  "Operations",
+  "Customer Service",
+  "Administration",
+  "Engineering",
+  "Product",
+  "Other",
 ] as const;
 
-const SURVEY_FREQUENCIES = ["Weekly", "Fortnightly", "Opt out of surveys"] as const;
+const SURVEY_FREQUENCIES = [
+  "Weekly",
+  "Fortnightly",
+  "Opt out of surveys",
+] as const;
 
 const surveySchema = z.object({
   stakeholderName: z.string().min(2, "Name is required"),
   stakeholderEmail: z.string().email("Please enter a valid email address"),
   role: z.string().min(2, "Role is required"),
   department: z.string().min(1, "Please select a department"),
-  thinkingFocus: z.enum(["Proof", "Process", "People", "Possibility"], { required_error: "Please select a focus area" }),
-  orientation: z.enum(["Eager", "Cautious"], { required_error: "Please select an orientation" }),
-  changeRole: z.enum(["Rockstar", "Roadie"], { required_error: "Please select a preferred role" }),
-  surveyFrequency: z.enum(["Weekly", "Fortnightly", "Opt out of surveys"], { required_error: "Please select a frequency preference" }),
+  thinkingFocus: z.enum(["Proof", "Process", "People", "Possibility"], {
+    required_error: "Please select a focus area",
+  }),
+  orientation: z.enum(["Eager", "Cautious"], {
+    required_error: "Please select an orientation",
+  }),
+  changeRole: z.enum(["Rockstar", "Roadie"], {
+    required_error: "Please select a preferred role",
+  }),
+  surveyFrequency: z.enum(["Weekly", "Fortnightly", "Opt out of surveys"], {
+    required_error: "Please select a frequency preference",
+  }),
   projectId: z.number().optional().nullable(),
 });
 
@@ -45,7 +66,7 @@ export default function SurveyForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
-  
+
   const { data: projectsData } = useGetProjects();
   const projects = projectsData?.projects || [];
 
@@ -58,7 +79,7 @@ export default function SurveyForm() {
       department: "",
       projectId: null,
     },
-    mode: "onChange"
+    mode: "onChange",
   });
 
   const submitMutation = useSubmitSurvey();
@@ -75,7 +96,7 @@ export default function SurveyForm() {
       toast({
         title: "Error submitting survey",
         description: "Please try again later.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -84,46 +105,62 @@ export default function SurveyForm() {
 
   const nextStep = async () => {
     const fieldsToValidate: (keyof SurveyFormValues)[] =
-      step === 1 ? ["stakeholderName", "stakeholderEmail", "role", "department"] :
-      step === 2 ? ["thinkingFocus"] :
-      step === 3 ? ["orientation"] :
-      step === 4 ? ["changeRole"] : [];
+      step === 1
+        ? ["stakeholderName", "stakeholderEmail", "role", "department"]
+        : step === 2
+          ? ["thinkingFocus"]
+          : step === 3
+            ? ["orientation"]
+            : step === 4
+              ? ["changeRole"]
+              : [];
     const isValid = await form.trigger(fieldsToValidate);
     if (isValid) {
-      setStep(s => Math.min(s + 1, totalSteps));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setStep((s) => Math.min(s + 1, totalSteps));
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const prevStep = () => {
-    setStep(s => Math.max(s - 1, 1));
+    setStep((s) => Math.max(s - 1, 1));
   };
 
-  const SelectionCard = ({ fieldName, value, title, description, icon: Icon }: any) => {
+  const SelectionCard = ({
+    fieldName,
+    value,
+    title,
+    description,
+    icon: Icon,
+  }: any) => {
     const currentValue = form.watch(fieldName);
     const isSelected = currentValue === value;
-    
+
     return (
       <button
         type="button"
-        onClick={() => form.setValue(fieldName, value, { shouldValidate: true })}
+        onClick={() =>
+          form.setValue(fieldName, value, { shouldValidate: true })
+        }
         className={`w-full p-6 flex flex-col items-start rounded-2xl border-2 transition-all duration-200 text-left relative overflow-hidden group
-          ${isSelected 
-            ? 'border-secondary bg-secondary/5 shadow-md shadow-secondary/10 ring-4 ring-secondary/20' 
-            : 'border-border bg-card hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm'
+          ${
+            isSelected
+              ? "border-secondary bg-secondary/5 shadow-md shadow-secondary/10 ring-4 ring-secondary/20"
+              : "border-border bg-card hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm"
           }`}
       >
         <div className="flex w-full items-start justify-between mb-3">
-          <h3 className={`text-xl font-bold ${isSelected ? 'text-secondary' : 'text-foreground'}`}>
+          <h3
+            className={`text-xl font-bold ${isSelected ? "text-secondary" : "text-foreground"}`}
+          >
             {title}
           </h3>
-          <div className={`h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors ${isSelected ? 'bg-secondary border-secondary text-white' : 'border-muted-foreground/30'}`}>
+          <div
+            className={`h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors ${isSelected ? "bg-secondary border-secondary text-white" : "border-muted-foreground/30"}`}
+          >
             {isSelected && <CheckCircle2 className="h-4 w-4" />}
           </div>
         </div>
-        <p className="text-muted-foreground leading-relaxed">
-          {description}
-        </p>
+        <p className="text-muted-foreground leading-relaxed">{description}</p>
       </button>
     );
   };
@@ -131,16 +168,19 @@ export default function SurveyForm() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1 py-10 px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto w-full">
-        
         <div className="mb-8">
           <div className="flex items-center justify-between text-sm font-medium text-muted-foreground mb-2.5">
-            <span>Step {step} of {totalSteps}</span>
-            <span className="font-semibold text-primary">{Math.round((step / totalSteps) * 100)}% Complete</span>
+            <span>
+              Step {step} of {totalSteps}
+            </span>
+            <span className="font-semibold text-primary">
+              {Math.round((step / totalSteps) * 100)}% Complete
+            </span>
           </div>
           <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
-            <motion.div 
+            <motion.div
               className="h-full bg-secondary rounded-full"
               initial={{ width: `${((step - 1) / totalSteps) * 100}%` }}
               animate={{ width: `${(step / totalSteps) * 100}%` }}
@@ -152,7 +192,6 @@ export default function SurveyForm() {
         <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
           <form onSubmit={form.handleSubmit(onSubmit)} className="p-8 md:p-12">
             <AnimatePresence mode="wait">
-              
               {step === 1 && (
                 <motion.div
                   key="step1"
@@ -163,39 +202,57 @@ export default function SurveyForm() {
                   className="space-y-8"
                 >
                   <div>
-                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">Let's get to know you</h2>
-                    <p className="text-muted-foreground text-lg">Your insights help shape the transformation journey.</p>
+                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">
+                      Let's get to know you
+                    </h2>
+                    <p className="text-muted-foreground text-lg">
+                      Your insights help shape the transformation journey.
+                    </p>
                   </div>
-                  
+
                   <div className="space-y-5">
                     <div className="space-y-2">
-                      <Label htmlFor="stakeholderName" className="text-base font-semibold">Full Name</Label>
-                      <Input 
-                        id="stakeholderName" 
-                        placeholder="Jane Doe" 
+                      <Label
+                        htmlFor="stakeholderName"
+                        className="text-base font-semibold"
+                      >
+                        Full Name
+                      </Label>
+                      <Input
+                        id="stakeholderName"
+                        placeholder="Jane Doe"
                         className="h-14 text-lg rounded-xl border-2 focus-visible:ring-secondary/20"
-                        {...form.register("stakeholderName")} 
+                        {...form.register("stakeholderName")}
                       />
                       {form.formState.errors.stakeholderName && (
-                        <p className="text-sm text-destructive">{form.formState.errors.stakeholderName.message}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="stakeholderEmail" className="text-base font-semibold">Email Address</Label>
-                      <Input 
-                        id="stakeholderEmail"
-                        type="email"
-                        placeholder="jane.doe@company.com" 
-                        className="h-14 text-lg rounded-xl border-2 focus-visible:ring-secondary/20"
-                        {...form.register("stakeholderEmail")} 
-                      />
-                      {form.formState.errors.stakeholderEmail && (
-                        <p className="text-sm text-destructive">{form.formState.errors.stakeholderEmail.message}</p>
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.stakeholderName.message}
+                        </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
+                      <Label
+                        htmlFor="stakeholderEmail"
+                        className="text-base font-semibold"
+                      >
+                        Email Address
+                      </Label>
+                      <Input
+                        id="stakeholderEmail"
+                        type="email"
+                        placeholder="jane.doe@company.com"
+                        className="h-14 text-lg rounded-xl border-2 focus-visible:ring-secondary/20"
+                        {...form.register("stakeholderEmail")}
+                      />
+                      {form.formState.errors.stakeholderEmail && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.stakeholderEmail.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* <div className="space-y-2">
                       <Label htmlFor="role" className="text-base font-semibold">Your Role / Title</Label>
                       <Input 
                         id="role" 
@@ -206,12 +263,21 @@ export default function SurveyForm() {
                       {form.formState.errors.role && (
                         <p className="text-sm text-destructive">{form.formState.errors.role.message}</p>
                       )}
-                    </div>
+                    </div> */}
 
                     <div className="space-y-2">
-                      <Label htmlFor="department" className="text-base font-semibold">Which department do you work in?</Label>
+                      <Label
+                        htmlFor="department"
+                        className="text-base font-semibold"
+                      >
+                        Which department do you work in?
+                      </Label>
                       <Select
-                        onValueChange={(val) => form.setValue("department", val, { shouldValidate: true })}
+                        onValueChange={(val) =>
+                          form.setValue("department", val, {
+                            shouldValidate: true,
+                          })
+                        }
                         value={form.watch("department") || undefined}
                       >
                         <SelectTrigger className="h-14 text-lg rounded-xl border-2">
@@ -219,20 +285,34 @@ export default function SurveyForm() {
                         </SelectTrigger>
                         <SelectContent>
                           {DEPARTMENTS.map((dept) => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                            <SelectItem key={dept} value={dept}>
+                              {dept}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       {form.formState.errors.department && (
-                        <p className="text-sm text-destructive">{form.formState.errors.department.message}</p>
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.department.message}
+                        </p>
                       )}
                     </div>
 
                     {projects.length > 0 && (
                       <div className="space-y-2">
-                        <Label htmlFor="projectId" className="text-base font-semibold">Project Context (Optional)</Label>
-                        <Select 
-                          onValueChange={(val) => form.setValue("projectId", val === "none" ? null : parseInt(val))}
+                        <Label
+                          htmlFor="projectId"
+                          className="text-base font-semibold"
+                        >
+                          Project Context (Optional)
+                        </Label>
+                        <Select
+                          onValueChange={(val) =>
+                            form.setValue(
+                              "projectId",
+                              val === "none" ? null : parseInt(val),
+                            )
+                          }
                         >
                           <SelectTrigger className="h-14 text-lg rounded-xl border-2">
                             <SelectValue placeholder="Select a project..." />
@@ -240,7 +320,9 @@ export default function SurveyForm() {
                           <SelectContent>
                             <SelectItem value="none">None / General</SelectItem>
                             {projects.map((p) => (
-                              <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                              <SelectItem key={p.id} value={p.id.toString()}>
+                                {p.name}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -260,30 +342,44 @@ export default function SurveyForm() {
                   className="space-y-8"
                 >
                   <div>
-                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">How do you approach work?</h2>
-                    <p className="text-muted-foreground text-lg">Select the thinking focus that best describes you.</p>
+                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">
+                      How do you approach work?
+                    </h2>
+                    <p className="text-muted-foreground text-lg">
+                      Select the thinking focus that best describes you.
+                    </p>
                   </div>
-                  
+
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <SelectionCard 
-                      fieldName="thinkingFocus" value="Proof" title="Proof" 
-                      description="Analytical, data-driven, and evidence-based. You need facts before making decisions." 
+                    <SelectionCard
+                      fieldName="thinkingFocus"
+                      value="Proof"
+                      title="Proof"
+                      description="Analytical, data-driven, and evidence-based. You need facts before making decisions."
                     />
-                    <SelectionCard 
-                      fieldName="thinkingFocus" value="Process" title="Process" 
-                      description="Structured, methodical, and detail-oriented. You care about the 'how' and minimizing risks." 
+                    <SelectionCard
+                      fieldName="thinkingFocus"
+                      value="Process"
+                      title="Process"
+                      description="Structured, methodical, and detail-oriented. You care about the 'how' and minimizing risks."
                     />
-                    <SelectionCard 
-                      fieldName="thinkingFocus" value="People" title="People" 
-                      description="Emotional, relationship-focused. You care deeply about how changes affect the team." 
+                    <SelectionCard
+                      fieldName="thinkingFocus"
+                      value="People"
+                      title="People"
+                      description="Emotional, relationship-focused. You care deeply about how changes affect the team."
                     />
-                    <SelectionCard 
-                      fieldName="thinkingFocus" value="Possibility" title="Possibility" 
-                      description="Creative, innovative, and big-picture oriented. You look for new ideas and future potential." 
+                    <SelectionCard
+                      fieldName="thinkingFocus"
+                      value="Possibility"
+                      title="Possibility"
+                      description="Creative, innovative, and big-picture oriented. You look for new ideas and future potential."
                     />
                   </div>
                   {form.formState.errors.thinkingFocus && (
-                    <p className="text-sm text-destructive">{form.formState.errors.thinkingFocus.message}</p>
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.thinkingFocus.message}
+                    </p>
                   )}
                 </motion.div>
               )}
@@ -298,22 +394,32 @@ export default function SurveyForm() {
                   className="space-y-8"
                 >
                   <div>
-                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">How do you feel about change?</h2>
-                    <p className="text-muted-foreground text-lg">Are you generally excited or do you prefer stability?</p>
+                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">
+                      How do you feel about change?
+                    </h2>
+                    <p className="text-muted-foreground text-lg">
+                      Are you generally excited or do you prefer stability?
+                    </p>
                   </div>
-                  
+
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <SelectionCard 
-                      fieldName="orientation" value="Eager" title="Eager" 
-                      description="Enthusiastic and ready to move forward. You embrace change as an opportunity." 
+                    <SelectionCard
+                      fieldName="orientation"
+                      value="Eager"
+                      title="Eager"
+                      description="Enthusiastic and ready to move forward. You embrace change as an opportunity."
                     />
-                    <SelectionCard 
-                      fieldName="orientation" value="Cautious" title="Cautious" 
-                      description="Skeptical of risks. You need reassurance and clear reasoning before jumping in." 
+                    <SelectionCard
+                      fieldName="orientation"
+                      value="Cautious"
+                      title="Cautious"
+                      description="Skeptical of risks. You need reassurance and clear reasoning before jumping in."
                     />
                   </div>
                   {form.formState.errors.orientation && (
-                    <p className="text-sm text-destructive">{form.formState.errors.orientation.message}</p>
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.orientation.message}
+                    </p>
                   )}
                 </motion.div>
               )}
@@ -328,22 +434,32 @@ export default function SurveyForm() {
                   className="space-y-8"
                 >
                   <div>
-                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">What's your role in transformation?</h2>
-                    <p className="text-muted-foreground text-lg">How do you prefer to influence outcomes?</p>
+                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">
+                      What's your role in transformation?
+                    </h2>
+                    <p className="text-muted-foreground text-lg">
+                      How do you prefer to influence outcomes?
+                    </p>
                   </div>
-                  
+
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <SelectionCard 
-                      fieldName="changeRole" value="Rockstar" title="The Rockstar" 
-                      description="A highly visible champion. You like leading from the front and rallying others." 
+                    <SelectionCard
+                      fieldName="changeRole"
+                      value="Rockstar"
+                      title="The Rockstar"
+                      description="A highly visible champion. You like leading from the front and rallying others."
                     />
-                    <SelectionCard 
-                      fieldName="changeRole" value="Roadie" title="The Roadie" 
-                      description="A behind-the-scenes supporter. You make things happen quietly but effectively." 
+                    <SelectionCard
+                      fieldName="changeRole"
+                      value="Roadie"
+                      title="The Roadie"
+                      description="A behind-the-scenes supporter. You make things happen quietly but effectively."
                     />
                   </div>
                   {form.formState.errors.changeRole && (
-                    <p className="text-sm text-destructive">{form.formState.errors.changeRole.message}</p>
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.changeRole.message}
+                    </p>
                   )}
                 </motion.div>
               )}
@@ -358,8 +474,12 @@ export default function SurveyForm() {
                   className="space-y-8"
                 >
                   <div>
-                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">Stay connected</h2>
-                    <p className="text-muted-foreground text-lg">How often would you like to receive future surveys?</p>
+                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">
+                      Stay connected
+                    </h2>
+                    <p className="text-muted-foreground text-lg">
+                      How often would you like to receive future surveys?
+                    </p>
                   </div>
 
                   <div className="grid gap-4">
@@ -370,17 +490,26 @@ export default function SurveyForm() {
                         <button
                           key={freq}
                           type="button"
-                          onClick={() => form.setValue("surveyFrequency", freq, { shouldValidate: true })}
+                          onClick={() =>
+                            form.setValue("surveyFrequency", freq, {
+                              shouldValidate: true,
+                            })
+                          }
                           className={`w-full p-6 flex items-center justify-between rounded-2xl border-2 transition-all duration-200 text-left
-                            ${isSelected
-                              ? 'border-secondary bg-secondary/5 shadow-md shadow-secondary/10 ring-4 ring-secondary/20'
-                              : 'border-border bg-card hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm'
+                            ${
+                              isSelected
+                                ? "border-secondary bg-secondary/5 shadow-md shadow-secondary/10 ring-4 ring-secondary/20"
+                                : "border-border bg-card hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm"
                             }`}
                         >
-                          <span className={`text-xl font-bold ${isSelected ? 'text-secondary' : 'text-foreground'}`}>
+                          <span
+                            className={`text-xl font-bold ${isSelected ? "text-secondary" : "text-foreground"}`}
+                          >
                             {freq}
                           </span>
-                          <div className={`h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors ${isSelected ? 'bg-secondary border-secondary text-white' : 'border-muted-foreground/30'}`}>
+                          <div
+                            className={`h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors ${isSelected ? "bg-secondary border-secondary text-white" : "border-muted-foreground/30"}`}
+                          >
                             {isSelected && <CheckCircle2 className="h-4 w-4" />}
                           </div>
                         </button>
@@ -388,35 +517,54 @@ export default function SurveyForm() {
                     })}
                   </div>
                   {form.formState.errors.surveyFrequency && (
-                    <p className="text-sm text-destructive">{form.formState.errors.surveyFrequency.message}</p>
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.surveyFrequency.message}
+                    </p>
                   )}
                 </motion.div>
               )}
-
             </AnimatePresence>
 
             <div className="mt-10 pt-8 border-t flex items-center justify-between">
               {step > 1 ? (
-                <Button type="button" variant="outline" size="lg" onClick={prevStep} className="h-12 px-6 rounded-xl border-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={prevStep}
+                  className="h-12 px-6 rounded-xl border-2"
+                >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-              ) : <div></div>}
-              
+              ) : (
+                <div></div>
+              )}
+
               {step < totalSteps ? (
-                <Button type="button" onClick={nextStep} size="lg" className="h-12 px-8 rounded-xl bg-primary hover:bg-primary/90">
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  size="lg"
+                  className="h-12 px-8 rounded-xl bg-primary hover:bg-primary/90"
+                >
                   Continue <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button 
-                  type="submit" 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  size="lg"
                   disabled={submitMutation.isPending}
                   className="h-12 px-8 rounded-xl bg-secondary hover:bg-secondary/90 text-white shadow-lg shadow-secondary/25"
                 >
                   {submitMutation.isPending ? (
-                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Submitting...</>
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />{" "}
+                      Submitting...
+                    </>
                   ) : (
-                    <><CheckCircle2 className="mr-2 h-5 w-5" /> Complete Survey</>
+                    <>
+                      <CheckCircle2 className="mr-2 h-5 w-5" /> Complete Survey
+                    </>
                   )}
                 </Button>
               )}

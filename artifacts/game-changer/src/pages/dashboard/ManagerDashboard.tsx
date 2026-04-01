@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { 
   Users, Briefcase, FileText, CheckCircle, Plus, Edit, Send, Loader2, Sparkles, MessageSquare, LogOut,
-  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight, Paperclip, Download, FileUp, Trash2,
+  Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight, ChevronRight, Paperclip, Download, FileUp, Trash2,
   Power, Calendar, ClipboardList
 } from "lucide-react";
 import { format } from "date-fns";
@@ -13,9 +13,10 @@ import { Navbar } from "@/components/layout/Navbar";
 import { ManagerAuth } from "./ManagerAuth";
 import { useManagerAuth } from "@/hooks/use-manager-auth";
 import { 
-  useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, 
+  useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, useGetConcerns,
   useCreateProject, useUpdateProject, useToggleProjectStatus,
-  projectKeys, messageKeys, dashboardKeys
+  useCreateConcern, useAssignConcernToSme, useSubmitManagerResponse, useResolveConcern,
+  projectKeys, messageKeys, dashboardKeys, concernKeys
 } from "@/hooks/use-supabase";
 import { projectService } from "@/lib/supabase-services";
 import type { FieldDocKey } from "@/lib/supabase-services";
@@ -879,6 +880,7 @@ function ProjectsTab() {
 
 function SurveysTab() {
   const { data, isLoading } = useGetSurveys();
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   if (isLoading) return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
@@ -895,29 +897,73 @@ function SurveysTab() {
             <TableRow className="bg-muted/50">
               <TableHead>Date</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Department</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Mental Model</TableHead>
               <TableHead>Focus</TableHead>
+              <TableHead>Orientation</TableHead>
+              <TableHead>Survey Pref.</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data?.surveys.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="text-center h-24 text-muted-foreground">No surveys found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center h-24 text-muted-foreground">No surveys found.</TableCell></TableRow>
             )}
             {data?.surveys.map((survey) => (
-              <TableRow key={survey.id}>
-                <TableCell className="text-muted-foreground whitespace-nowrap">
-                  {format(new Date(survey.createdAt), 'MMM d, yyyy')}
-                </TableCell>
-                <TableCell className="font-medium">{survey.stakeholderName}</TableCell>
-                <TableCell>{survey.role}</TableCell>
-                <TableCell>
-                  <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-semibold shadow-none">
-                    {survey.mentalModel}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{survey.thinkingFocus}</TableCell>
-              </TableRow>
+              <>
+                <TableRow
+                  key={survey.id}
+                  className="cursor-pointer hover:bg-muted/30"
+                  onClick={() => setExpandedId(expandedId === survey.id ? null : survey.id)}
+                >
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                    {format(new Date(survey.createdAt), 'MMM d, yyyy')}
+                  </TableCell>
+                  <TableCell className="font-medium">{survey.stakeholderName}</TableCell>
+                  <TableCell>{survey.department || '—'}</TableCell>
+                  <TableCell>{survey.role}</TableCell>
+                  <TableCell>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-semibold shadow-none">
+                      {survey.mentalModel}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{survey.thinkingFocus}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="shadow-none">{survey.orientation}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {survey.surveyFrequency ? (
+                      <Badge variant="secondary" className="shadow-none text-xs">
+                        {survey.surveyFrequency}
+                      </Badge>
+                    ) : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === survey.id ? 'rotate-90' : ''}`} />
+                  </TableCell>
+                </TableRow>
+                {expandedId === survey.id && (
+                  <TableRow key={`${survey.id}-detail`}>
+                    <TableCell colSpan={9} className="bg-muted/20 p-4">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground font-medium">Email:</span>{' '}
+                          <span>{survey.stakeholderEmail}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground font-medium">Change Role:</span>{' '}
+                          <span>{survey.changeRole}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground font-medium">Model Description:</span>{' '}
+                          <span className="text-xs">{survey.mentalModelDescription}</span>
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </>
             ))}
           </TableBody>
         </Table>
@@ -1137,25 +1183,271 @@ function MessagesTab() {
 
 function ConcernsTabInline() {
   const [, setLocation] = useLocation();
+  const { data, isLoading } = useGetConcerns();
+  const { data: projectsData } = useGetProjects();
+  const projects = projectsData?.projects || [];
+  const createMutation = useCreateConcern();
+  const assignMutation = useAssignConcernToSme();
+  const managerRespondMutation = useSubmitManagerResponse();
+  const resolveMutation = useResolveConcern();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newConcern, setNewConcern] = useState({ stakeholderName: "", concernText: "", projectId: "" });
+  const [assignOpen, setAssignOpen] = useState<number | null>(null);
+  const [smeEmail, setSmeEmail] = useState("");
+  const [smeName, setSmeName] = useState("");
+  const [respondOpen, setRespondOpen] = useState<number | null>(null);
+  const [managerResponse, setManagerResponse] = useState("");
+  const [filter, setFilter] = useState<string>("all");
+
+  const STATUS_CFG: Record<string, { label: string; color: string; icon: typeof AlertTriangle }> = {
+    open: { label: "Open", color: "bg-yellow-100 text-yellow-800", icon: AlertTriangle },
+    assigned: { label: "Assigned", color: "bg-blue-100 text-blue-800", icon: Users },
+    responded: { label: "Responded", color: "bg-purple-100 text-purple-800", icon: MessageSquare },
+    resolved: { label: "Resolved", color: "bg-green-100 text-green-800", icon: CheckCircle },
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const parsedProjectId = newConcern.projectId && newConcern.projectId !== "none" ? parseInt(newConcern.projectId) : null;
+      await createMutation.mutateAsync({
+        stakeholderName: newConcern.stakeholderName,
+        concernText: newConcern.concernText,
+        projectId: Number.isNaN(parsedProjectId) ? null : parsedProjectId,
+      });
+      toast({ title: "Concern created" });
+      queryClient.invalidateQueries({ queryKey: concernKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats });
+      setCreateOpen(false);
+      setNewConcern({ stakeholderName: "", concernText: "", projectId: "" });
+    } catch {
+      toast({ title: "Error creating concern", variant: "destructive" });
+    }
+  };
+
+  const handleAssign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignOpen) return;
+    try {
+      await assignMutation.mutateAsync({ id: assignOpen, smeEmail, smeName });
+      toast({ title: "Concern assigned to SME", description: `Link: /sme/respond/${assignOpen}` });
+      queryClient.invalidateQueries({ queryKey: concernKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats });
+      setAssignOpen(null);
+      setSmeEmail("");
+      setSmeName("");
+    } catch {
+      toast({ title: "Error assigning concern", variant: "destructive" });
+    }
+  };
+
+  const handleManagerRespond = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!respondOpen) return;
+    try {
+      await managerRespondMutation.mutateAsync({ id: respondOpen, response: managerResponse });
+      toast({ title: "Response saved and concern resolved" });
+      queryClient.invalidateQueries({ queryKey: concernKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats });
+      setRespondOpen(null);
+      setManagerResponse("");
+    } catch {
+      toast({ title: "Error responding", variant: "destructive" });
+    }
+  };
+
+  const handleResolve = async (id: number) => {
+    try {
+      await resolveMutation.mutateAsync(id);
+      toast({ title: "Concern marked as resolved" });
+      queryClient.invalidateQueries({ queryKey: concernKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats });
+    } catch {
+      toast({ title: "Error resolving concern", variant: "destructive" });
+    }
+  };
+
+  const concerns = data?.concerns || [];
+  const filtered = filter === "all" ? concerns : concerns.filter(c => c.status === filter);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap gap-3 items-center justify-between">
         <div>
           <h3 className="text-2xl font-bold">Stakeholder Concerns</h3>
           <p className="text-muted-foreground">Track, assign, and resolve stakeholder concerns.</p>
         </div>
-        <Button onClick={() => setLocation("/manager/concerns")} className="gap-2">
-          <ClipboardList className="h-4 w-4" /> Open Full View
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setLocation("/manager/concerns")} className="gap-2">
+            <ClipboardList className="h-4 w-4" /> Full View
+          </Button>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-2 h-4 w-4" /> Log Concern</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Log a Stakeholder Concern</DialogTitle></DialogHeader>
+              <form onSubmit={handleCreate} className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label>Stakeholder Name *</Label>
+                  <Input required value={newConcern.stakeholderName} onChange={e => setNewConcern({ ...newConcern, stakeholderName: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Concern *</Label>
+                  <Textarea required rows={4} value={newConcern.concernText} onChange={e => setNewConcern({ ...newConcern, concernText: e.target.value })} placeholder="Describe the concern..." />
+                </div>
+                {projects.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Related Project</Label>
+                    <Select value={newConcern.projectId} onValueChange={v => setNewConcern({ ...newConcern, projectId: v })}>
+                      <SelectTrigger><SelectValue placeholder="Select project..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {projects.map(p => <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button type="submit" disabled={createMutation.isPending}>
+                    {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Log Concern
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
-      <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed rounded-2xl text-center bg-muted/20">
-        <ClipboardList className="h-10 w-10 text-muted-foreground mb-4" />
-        <h4 className="text-lg font-semibold mb-2">Manage Concerns</h4>
-        <p className="text-muted-foreground text-sm max-w-sm mb-4">
-          Log, assign to subject matter experts, and resolve stakeholder concerns from the dedicated concerns page.
-        </p>
-        <Button onClick={() => setLocation("/manager/concerns")}>Go to Concerns</Button>
+
+      <div className="flex gap-2 flex-wrap">
+        {["all", "open", "assigned", "responded", "resolved"].map(s => (
+          <Button key={s} variant={filter === s ? "default" : "outline"} size="sm"
+            onClick={() => setFilter(s)} className="capitalize">
+            {s === "all" ? "All" : STATUS_CFG[s]?.label || s}
+            {s !== "all" && <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5">{concerns.filter(c => c.status === s).length}</Badge>}
+          </Button>
+        ))}
       </div>
+
+      {isLoading ? (
+        <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="p-12 text-center border-2 border-dashed rounded-xl text-muted-foreground">
+          No concerns found.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map(concern => {
+            const cfg = STATUS_CFG[concern.status] || STATUS_CFG.open;
+            const StatusIcon = cfg.icon;
+            return (
+              <Card key={concern.id} className="shadow-sm">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-lg">{concern.stakeholderName}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{format(new Date(concern.createdAt), "MMM d, yyyy 'at' h:mm a")}</p>
+                    </div>
+                    <Badge className={`${cfg.color} border-0 gap-1`}>
+                      <StatusIcon className="h-3 w-3" /> {cfg.label}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm">{concern.concernText}</p>
+
+                  {concern.assignedToSmeName && (
+                    <div className="text-xs bg-blue-50 rounded-lg p-3 space-y-1">
+                      <p className="font-semibold text-blue-800">Assigned to: {concern.assignedToSmeName} ({concern.assignedToSmeEmail})</p>
+                      <p className="text-blue-600">SME Link: <code className="bg-blue-100 px-1 rounded">/sme/respond/{concern.id}</code></p>
+                    </div>
+                  )}
+
+                  {concern.smeResponse && (
+                    <div className="bg-purple-50 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-purple-800 mb-1">SME Response:</p>
+                      <p className="text-sm text-purple-900">{concern.smeResponse}</p>
+                    </div>
+                  )}
+
+                  {concern.managerResponse && (
+                    <div className="bg-green-50 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-green-800 mb-1">Manager Response:</p>
+                      <p className="text-sm text-green-900">{concern.managerResponse}</p>
+                    </div>
+                  )}
+
+                  {concern.status !== "resolved" && (
+                    <div className="flex flex-wrap gap-2 pt-2 border-t">
+                      {(concern.status === "open" || concern.status === "assigned") && (
+                        <>
+                          {concern.status === "open" && (
+                            <Button size="sm" variant="outline" onClick={() => setAssignOpen(concern.id)}>
+                              <Users className="mr-1.5 h-3.5 w-3.5" /> Assign to SME
+                            </Button>
+                          )}
+                          <Button size="sm" variant="outline" onClick={() => setRespondOpen(concern.id)}>
+                            <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Respond Directly
+                          </Button>
+                        </>
+                      )}
+                      {concern.status === "responded" && (
+                        <Button size="sm" onClick={() => handleResolve(concern.id)}>
+                          <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Mark Resolved
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={assignOpen !== null} onOpenChange={() => setAssignOpen(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Assign to Subject Matter Expert</DialogTitle></DialogHeader>
+          <form onSubmit={handleAssign} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>SME Name *</Label>
+              <Input required value={smeName} onChange={e => setSmeName(e.target.value)} placeholder="Dr. Smith" />
+            </div>
+            <div className="space-y-2">
+              <Label>SME Email *</Label>
+              <Input required type="email" value={smeEmail} onChange={e => setSmeEmail(e.target.value)} placeholder="sme@company.com" />
+            </div>
+            <p className="text-xs text-muted-foreground">The SME will use the link <code>/sme/respond/{assignOpen}</code> to submit their response.</p>
+            <DialogFooter>
+              <Button type="submit" disabled={assignMutation.isPending}>
+                {assignMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Send className="mr-1.5 h-4 w-4" /> Assign
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={respondOpen !== null} onOpenChange={() => setRespondOpen(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Manager Direct Response</DialogTitle></DialogHeader>
+          <form onSubmit={handleManagerRespond} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Your Response *</Label>
+              <Textarea required rows={5} value={managerResponse} onChange={e => setManagerResponse(e.target.value)} placeholder="Type your response to the stakeholder concern..." />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={managerRespondMutation.isPending}>
+                {managerRespondMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Submit & Resolve
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
