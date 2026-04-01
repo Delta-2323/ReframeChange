@@ -20,13 +20,22 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 
+const DEPARTMENTS = [
+  "HR", "IT", "Finance", "Marketing", "Sales", "Operations",
+  "Customer Service", "Administration", "Engineering", "Product", "Other",
+] as const;
+
+const SURVEY_FREQUENCIES = ["Weekly", "Fortnightly", "Opt out of surveys"] as const;
+
 const surveySchema = z.object({
   stakeholderName: z.string().min(2, "Name is required"),
   stakeholderEmail: z.string().email("Please enter a valid email address"),
   role: z.string().min(2, "Role is required"),
+  department: z.string().min(1, "Please select a department"),
   thinkingFocus: z.enum(["Proof", "Process", "People", "Possibility"], { required_error: "Please select a focus area" }),
   orientation: z.enum(["Eager", "Cautious"], { required_error: "Please select an orientation" }),
   changeRole: z.enum(["Rockstar", "Roadie"], { required_error: "Please select a preferred role" }),
+  surveyFrequency: z.enum(["Weekly", "Fortnightly", "Opt out of surveys"], { required_error: "Please select a frequency preference" }),
   projectId: z.number().optional().nullable(),
 });
 
@@ -46,6 +55,7 @@ export default function SurveyForm() {
       stakeholderName: "",
       stakeholderEmail: "",
       role: "",
+      department: "",
       projectId: null,
     },
     mode: "onChange"
@@ -70,12 +80,17 @@ export default function SurveyForm() {
     }
   };
 
+  const totalSteps = 5;
+
   const nextStep = async () => {
-    const isValid = await form.trigger(step === 1 ? ["stakeholderName", "stakeholderEmail", "role"] : 
-                                       step === 2 ? ["thinkingFocus"] : 
-                                       step === 3 ? ["orientation"] : []);
+    const fieldsToValidate: (keyof SurveyFormValues)[] =
+      step === 1 ? ["stakeholderName", "stakeholderEmail", "role", "department"] :
+      step === 2 ? ["thinkingFocus"] :
+      step === 3 ? ["orientation"] :
+      step === 4 ? ["changeRole"] : [];
+    const isValid = await form.trigger(fieldsToValidate);
     if (isValid) {
-      setStep(s => Math.min(s + 1, 4));
+      setStep(s => Math.min(s + 1, totalSteps));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -121,14 +136,14 @@ export default function SurveyForm() {
         
         <div className="mb-8">
           <div className="flex items-center justify-between text-sm font-medium text-muted-foreground mb-2.5">
-            <span>Step {step} of 4</span>
-            <span className="font-semibold text-primary">{Math.round((step / 4) * 100)}% Complete</span>
+            <span>Step {step} of {totalSteps}</span>
+            <span className="font-semibold text-primary">{Math.round((step / totalSteps) * 100)}% Complete</span>
           </div>
           <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
             <motion.div 
               className="h-full bg-secondary rounded-full"
-              initial={{ width: `${((step - 1) / 4) * 100}%` }}
-              animate={{ width: `${(step / 4) * 100}%` }}
+              initial={{ width: `${((step - 1) / totalSteps) * 100}%` }}
+              animate={{ width: `${(step / totalSteps) * 100}%` }}
               transition={{ duration: 0.35, ease: "easeOut" }}
             />
           </div>
@@ -190,6 +205,26 @@ export default function SurveyForm() {
                       />
                       {form.formState.errors.role && (
                         <p className="text-sm text-destructive">{form.formState.errors.role.message}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="department" className="text-base font-semibold">Which department do you work in?</Label>
+                      <Select
+                        onValueChange={(val) => form.setValue("department", val, { shouldValidate: true })}
+                        value={form.watch("department") || undefined}
+                      >
+                        <SelectTrigger className="h-14 text-lg rounded-xl border-2">
+                          <SelectValue placeholder="Select your department..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DEPARTMENTS.map((dept) => (
+                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.department && (
+                        <p className="text-sm text-destructive">{form.formState.errors.department.message}</p>
                       )}
                     </div>
 
@@ -313,6 +348,51 @@ export default function SurveyForm() {
                 </motion.div>
               )}
 
+              {step === 5 && (
+                <motion.div
+                  key="step5"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-8"
+                >
+                  <div>
+                    <h2 className="text-3xl font-display font-bold text-foreground mb-2">Stay connected</h2>
+                    <p className="text-muted-foreground text-lg">How often would you like to receive future surveys?</p>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {SURVEY_FREQUENCIES.map((freq) => {
+                      const currentValue = form.watch("surveyFrequency");
+                      const isSelected = currentValue === freq;
+                      return (
+                        <button
+                          key={freq}
+                          type="button"
+                          onClick={() => form.setValue("surveyFrequency", freq, { shouldValidate: true })}
+                          className={`w-full p-6 flex items-center justify-between rounded-2xl border-2 transition-all duration-200 text-left
+                            ${isSelected
+                              ? 'border-secondary bg-secondary/5 shadow-md shadow-secondary/10 ring-4 ring-secondary/20'
+                              : 'border-border bg-card hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm'
+                            }`}
+                        >
+                          <span className={`text-xl font-bold ${isSelected ? 'text-secondary' : 'text-foreground'}`}>
+                            {freq}
+                          </span>
+                          <div className={`h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors ${isSelected ? 'bg-secondary border-secondary text-white' : 'border-muted-foreground/30'}`}>
+                            {isSelected && <CheckCircle2 className="h-4 w-4" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {form.formState.errors.surveyFrequency && (
+                    <p className="text-sm text-destructive">{form.formState.errors.surveyFrequency.message}</p>
+                  )}
+                </motion.div>
+              )}
+
             </AnimatePresence>
 
             <div className="mt-10 pt-8 border-t flex items-center justify-between">
@@ -322,7 +402,7 @@ export default function SurveyForm() {
                 </Button>
               ) : <div></div>}
               
-              {step < 4 ? (
+              {step < totalSteps ? (
                 <Button type="button" onClick={nextStep} size="lg" className="h-12 px-8 rounded-xl bg-primary hover:bg-primary/90">
                   Continue <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>

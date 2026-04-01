@@ -166,11 +166,13 @@ def survey_to_camel(s):
         "stakeholderName": s.get("stakeholder_name"),
         "stakeholderEmail": s.get("stakeholder_email"),
         "role": s.get("role"),
+        "department": s.get("department"),
         "thinkingFocus": s.get("thinking_focus"),
         "orientation": s.get("orientation"),
         "changeRole": s.get("change_role"),
         "mentalModel": s.get("mental_model"),
         "mentalModelDescription": s.get("mental_model_description"),
+        "surveyFrequency": s.get("survey_frequency"),
         "projectId": s.get("project_id"),
         "createdAt": s.get("created_at"),
     }
@@ -489,8 +491,21 @@ def submit_survey():
             "mental_model_description": model_data["description"],
             "project_id": body.get("projectId"),
         }
+        if body.get("department"):
+            row["department"] = body["department"]
+        if body.get("surveyFrequency"):
+            row["survey_frequency"] = body["surveyFrequency"]
 
-        result = supabase.table("surveys").insert(row).execute()
+        try:
+            result = supabase.table("surveys").insert(row).execute()
+        except Exception as insert_err:
+            err_msg = str(insert_err)
+            if "column" in err_msg and "schema cache" in err_msg:
+                row.pop("department", None)
+                row.pop("survey_frequency", None)
+                result = supabase.table("surveys").insert(row).execute()
+            else:
+                raise insert_err
         survey = result.data[0] if result.data else None
         return jsonify(survey_to_camel(survey)), 201
     except Exception as e:
