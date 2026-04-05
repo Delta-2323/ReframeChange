@@ -252,18 +252,22 @@ export default function SurveyForm() {
                       )}
                     </div>
 
-                    {/* <div className="space-y-2">
-                      <Label htmlFor="role" className="text-base font-semibold">Your Role / Title</Label>
-                      <Input 
-                        id="role" 
-                        placeholder="E.g. Engineering Manager, Product Lead..." 
+                    <div className="space-y-2">
+                      <Label htmlFor="role" className="text-base font-semibold">
+                        Your Role / Title
+                      </Label>
+                      <Input
+                        id="role"
+                        placeholder="E.g. Engineering Manager, Product Lead..."
                         className="h-14 text-lg rounded-xl border-2 focus-visible:ring-secondary/20"
-                        {...form.register("role")} 
+                        {...form.register("role")}
                       />
                       {form.formState.errors.role && (
-                        <p className="text-sm text-destructive">{form.formState.errors.role.message}</p>
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.role.message}
+                        </p>
                       )}
-                    </div> */}
+                    </div>
 
                     <div className="space-y-2">
                       <Label
