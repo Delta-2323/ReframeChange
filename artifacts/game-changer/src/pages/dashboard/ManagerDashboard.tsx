@@ -216,22 +216,22 @@ function Rm16AnalyticsPanel() {
   const maxCount = dist.length > 0 ? Math.max(...dist.map(d => d.count), 1) : 1;
 
   const MODEL_COLORS: Record<string, string> = {
-    "The Champion Analyst": "#3b82f6",
-    "The Quiet Validator": "#60a5fa",
+    "The Architect": "#3b82f6",
+    "The Explorer": "#60a5fa",
     "The Sceptic": "#2563eb",
-    "The Silent Doubter": "#93c5fd",
-    "The Systems Builder": "#22c55e",
-    "The Reliable Executor": "#4ade80",
-    "The Risk Manager": "#16a34a",
-    "The Resistant Follower": "#86efac",
-    "The Energiser": "#ef4444",
-    "The Quiet Connector": "#f87171",
-    "The Protector": "#dc2626",
-    "The Concerned Observer": "#fca5a5",
+    "The Forecaster": "#93c5fd",
+    "The Implementer": "#22c55e",
+    "The Perfectionist": "#4ade80",
+    "The Bureaucrat": "#16a34a",
+    "The Driver": "#86efac",
+    "The Facilitator": "#ef4444",
+    "The Humanitarian": "#f87171",
+    "The Preservationist": "#dc2626",
+    "The Shepherd": "#fca5a5",
     "The Creator": "#eab308",
-    "The Dreamer": "#facc15",
-    "The Critic": "#ca8a04",
-    "The Hesitant Innovator": "#fde047",
+    "The Guru": "#facc15",
+    "The Fearful Optimist": "#ca8a04",
+    "The Lost Soul": "#fde047",
   };
 
   const STYLE_CONFIG = [

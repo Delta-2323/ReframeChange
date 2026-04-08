@@ -30,12 +30,12 @@ openai_client = OpenAI(
 
 REM16_MAP = {
     "Proof-Eager-Rockstar": {
-        "name": "The Champion Analyst",
-        "description": "You champion change with evidence. You energetically communicate data-driven rationale and inspire others through logical arguments. Your role is to validate and promote the change with credibility.",
+        "name": "The Architect",
+        "description": "You build change on solid foundations of evidence. You energetically communicate data-driven rationale and inspire others through logical arguments. Your role is to validate and promote the change with credibility.",
         "thinkingWeights": {"Proof": 0.7, "Process": 0.15, "People": 0.05, "Possibilities": 0.1},
     },
     "Proof-Eager-Roadie": {
-        "name": "The Quiet Validator",
+        "name": "The Explorer",
         "description": "You support change by quietly gathering and sharing evidence behind the scenes. You build confidence in others through thorough research without seeking the spotlight yourself.",
         "thinkingWeights": {"Proof": 0.65, "Process": 0.2, "People": 0.1, "Possibilities": 0.05},
     },
@@ -45,48 +45,48 @@ REM16_MAP = {
         "thinkingWeights": {"Proof": 0.6, "Process": 0.2, "People": 0.05, "Possibilities": 0.15},
     },
     "Proof-Cautious-Roadie": {
-        "name": "The Silent Doubter",
-        "description": "You have reservations about the change but express them quietly through careful questioning in small groups. You need data and reassurance before you can fully commit to supporting the change.",
+        "name": "The Forecaster",
+        "description": "You have reservations about the change but express them through careful analysis in small groups. You need data and reassurance before you can fully commit to supporting the change.",
         "thinkingWeights": {"Proof": 0.6, "Process": 0.15, "People": 0.15, "Possibilities": 0.1},
     },
     "Process-Eager-Rockstar": {
-        "name": "The Systems Builder",
+        "name": "The Implementer",
         "description": "You champion change through structure. You visibly lead the implementation of plans, processes, and governance frameworks, ensuring the change is delivered in an organised and reliable way.",
         "thinkingWeights": {"Proof": 0.15, "Process": 0.7, "People": 0.05, "Possibilities": 0.1},
     },
     "Process-Eager-Roadie": {
-        "name": "The Reliable Executor",
+        "name": "The Perfectionist",
         "description": "You support change by diligently following and completing processes. You are the backbone of implementation — reliable, thorough, and consistent in delivering on your commitments.",
         "thinkingWeights": {"Proof": 0.1, "Process": 0.7, "People": 0.1, "Possibilities": 0.1},
     },
     "Process-Cautious-Rockstar": {
-        "name": "The Risk Manager",
+        "name": "The Bureaucrat",
         "description": "You are a visible advocate for careful, risk-aware change. You raise concerns about process gaps and implementation risks publicly, helping the team avoid costly mistakes.",
         "thinkingWeights": {"Proof": 0.2, "Process": 0.6, "People": 0.1, "Possibilities": 0.1},
     },
     "Process-Cautious-Roadie": {
-        "name": "The Resistant Follower",
+        "name": "The Driver",
         "description": "You follow instructions but have serious concerns about whether the change has been properly planned. You need clear processes and assurances before you can fully engage with the change.",
         "thinkingWeights": {"Proof": 0.15, "Process": 0.6, "People": 0.15, "Possibilities": 0.1},
     },
     "People-Eager-Rockstar": {
-        "name": "The Energiser",
+        "name": "The Facilitator",
         "description": "You bring emotional energy and enthusiasm to change. You visibly rally people, build morale, and create a sense of community and belonging around the change journey.",
         "thinkingWeights": {"Proof": 0.05, "Process": 0.1, "People": 0.7, "Possibilities": 0.15},
     },
     "People-Eager-Roadie": {
-        "name": "The Quiet Connector",
+        "name": "The Humanitarian",
         "description": "You support change by nurturing relationships behind the scenes. You listen, support, and connect people informally, helping teams feel safe and supported through the transition.",
         "thinkingWeights": {"Proof": 0.05, "Process": 0.1, "People": 0.7, "Possibilities": 0.15},
     },
     "People-Cautious-Rockstar": {
-        "name": "The Protector",
+        "name": "The Preservationist",
         "description": "You visibly advocate for the wellbeing of your team during change. You are cautious about impacts on people and ensure that the human cost of change is recognised and addressed.",
         "thinkingWeights": {"Proof": 0.1, "Process": 0.15, "People": 0.6, "Possibilities": 0.15},
     },
     "People-Cautious-Roadie": {
-        "name": "The Concerned Observer",
-        "description": "You are deeply worried about how the change will affect people, but you express these concerns quietly. You need reassurance that people's wellbeing is being looked after before you can engage.",
+        "name": "The Shepherd",
+        "description": "You are deeply concerned about how the change will affect people, and you guide them through it quietly. You need reassurance that people's wellbeing is being looked after before you can engage.",
         "thinkingWeights": {"Proof": 0.1, "Process": 0.15, "People": 0.65, "Possibilities": 0.1},
     },
     "Possibility-Eager-Rockstar": {
@@ -95,20 +95,37 @@ REM16_MAP = {
         "thinkingWeights": {"Proof": 0.05, "Process": 0.1, "People": 0.15, "Possibilities": 0.7},
     },
     "Possibility-Eager-Roadie": {
-        "name": "The Dreamer",
-        "description": "You are inspired by the possibilities of change and support it enthusiastically behind the scenes. You generate ideas and creative solutions, though you prefer others to take the visible lead.",
+        "name": "The Guru",
+        "description": "You are inspired by the possibilities of change and support it with deep insight behind the scenes. You generate ideas and creative solutions, though you prefer others to take the visible lead.",
         "thinkingWeights": {"Proof": 0.1, "Process": 0.05, "People": 0.15, "Possibilities": 0.7},
     },
     "Possibility-Cautious-Rockstar": {
-        "name": "The Critic",
-        "description": "You see the potential in change but are openly critical of how it is being executed. You challenge assumptions publicly and push for more creative and ambitious approaches to the change vision.",
+        "name": "The Fearful Optimist",
+        "description": "You see the potential in change but are cautious about how it is being executed. You challenge assumptions publicly and push for more creative and ambitious approaches to the change vision.",
         "thinkingWeights": {"Proof": 0.15, "Process": 0.1, "People": 0.1, "Possibilities": 0.65},
     },
     "Possibility-Cautious-Roadie": {
-        "name": "The Hesitant Innovator",
+        "name": "The Lost Soul",
         "description": "You are drawn to the possibilities of change but hold back due to uncertainty or past disappointments. You need to see the vision articulated more clearly before you can fully commit your creative energy.",
         "thinkingWeights": {"Proof": 0.15, "Process": 0.15, "People": 0.1, "Possibilities": 0.6},
     },
+}
+
+LEGACY_NAME_MAP = {
+    "The Champion Analyst": "The Architect",
+    "The Quiet Validator": "The Explorer",
+    "The Silent Doubter": "The Forecaster",
+    "The Systems Builder": "The Implementer",
+    "The Reliable Executor": "The Perfectionist",
+    "The Risk Manager": "The Bureaucrat",
+    "The Resistant Follower": "The Driver",
+    "The Energiser": "The Facilitator",
+    "The Quiet Connector": "The Humanitarian",
+    "The Protector": "The Preservationist",
+    "The Concerned Observer": "The Shepherd",
+    "The Dreamer": "The Guru",
+    "The Critic": "The Fearful Optimist",
+    "The Hesitant Innovator": "The Lost Soul",
 }
 
 ALL_MODEL_NAMES = [v["name"] for v in REM16_MAP.values()]
@@ -774,6 +791,7 @@ def dashboard_stats():
         orient_map = {}
         for s in all_surveys:
             mm = s.get("mental_model", "Unknown")
+            mm = LEGACY_NAME_MAP.get(mm, mm)
             model_map[mm] = model_map.get(mm, 0) + 1
             tf = s.get("thinking_focus", "Unknown")
             focus_map[tf] = focus_map.get(tf, 0) + 1
@@ -813,11 +831,13 @@ def rm16_analytics():
         total = len(all_surveys)
 
         name_to_key = {v["name"]: k for k, v in REM16_MAP.items()}
+        legacy_to_new = {old: new for old, new in LEGACY_NAME_MAP.items()}
         model_counts = {v["name"]: 0 for v in REM16_MAP.values()}
         for s in all_surveys:
             mm = s.get("mental_model", "")
-            if mm in model_counts:
-                model_counts[mm] += 1
+            resolved = legacy_to_new.get(mm, mm)
+            if resolved in model_counts:
+                model_counts[resolved] += 1
 
         recognized_total = sum(model_counts.values())
         model_distribution = []
@@ -831,7 +851,8 @@ def rm16_analytics():
         thinking_totals = {"Proof": 0.0, "Process": 0.0, "People": 0.0, "Possibilities": 0.0}
         for s in all_surveys:
             mm = s.get("mental_model", "")
-            key = name_to_key.get(mm)
+            resolved = legacy_to_new.get(mm, mm)
+            key = name_to_key.get(resolved)
             if key and key in REM16_MAP:
                 weights = REM16_MAP[key].get("thinkingWeights", {})
                 for dim in thinking_totals:
