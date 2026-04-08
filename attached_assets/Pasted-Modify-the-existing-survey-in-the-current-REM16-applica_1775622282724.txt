@@ -1,0 +1,102 @@
+Modify the existing survey in the current REM16 application. Do not build a new survey flow or a separate form. Update the existing survey so that at the end of the survey, before final submission, there is a new text field where the user can enter any concerns they have.
+
+Important:
+- This is a modification of the existing app, not a rebuild
+- Reuse the current survey flow, backend, database structure, and concern tab where possible
+- Keep the current styling and UX consistent with the existing app
+- Do not create mock data
+- Do not create a separate concerns page
+- The concern must appear in the existing Concern tab after submission
+
+Feature to add:
+At the end of the survey, add a field such as:
+- Label: “Do you have any concerns you would like to share?”
+- Type: multi-line text area
+- Placeholder: “Enter any concerns, risks, blockers, or feedback here...”
+
+Behavior:
+1. The concern text field should appear on the final step of the existing survey
+2. The field should be optional unless the current business rules require otherwise
+3. When the user submits the survey:
+   - save the survey as usual
+   - if the text area contains text, store it in the backend as a concern record
+   - mark that record clearly as a concern
+   - link it to the submitted survey response and the current user if user context exists
+4. After submission, the concern should automatically appear in the existing Concern tab
+5. If the field is empty, the survey should still submit normally without creating a concern record
+
+What to inspect first:
+- Find the existing survey frontend files
+- Find the current survey submission handler
+- Find the existing backend endpoint/service for survey submission
+- Find the existing Concern tab implementation
+- Find the current database model/table for concerns, if one already exists
+- Reuse the existing concern data model if possible
+- Only add new schema fields/tables if absolutely necessary
+
+Implementation requirements:
+
+Frontend:
+- Add a textarea to the final survey step
+- Keep validation clean and simple
+- Include the concern text in the existing survey submit payload
+- Preserve current survey navigation and progress behavior
+- Show a success state after submission as the app currently does
+
+Backend:
+- Extend the existing survey submission logic
+- When concern_text is present and not empty:
+  - trim whitespace
+  - create a concern entry in the backend
+  - tag or classify it as a concern
+  - store metadata such as:
+    - concern text
+    - survey response id
+    - user id if available
+    - created timestamp
+    - status default, e.g. “open” or current app standard
+- If the app already has a concerns table, insert into it
+- If concerns are stored as part of another entity, follow the existing app pattern
+
+Concern tab integration:
+- Make sure the existing Concern tab fetches and displays the new concern
+- Do not create a second concern list
+- Reuse the current concern tab query/data source
+- If needed, update the query so newly created concerns from survey submissions appear there
+- Show the concern with the same styling and fields used by the current concern records
+
+Data handling:
+Use a field name like:
+- concernText on the frontend
+- concern_text in the backend/database if snake_case is the project standard
+
+Edge cases:
+- If concern text is blank or only whitespace, do not create a concern record
+- Survey submission must still succeed even if no concern is entered
+- Do not break existing survey submission logic
+- Handle backend save errors gracefully
+- If survey submission succeeds but concern creation fails, log the failure and surface an appropriate message according to the app’s current error-handling pattern
+
+Suggested implementation steps:
+1. Update the existing survey UI to add the textarea on the final step
+2. Extend the existing form state to include concernText
+3. Include concernText in the submission payload
+4. Update the existing backend submission logic to create a concern record
+5. Ensure the concern is stored in the existing concern data source
+6. Verify the Concern tab displays the newly created concern
+7. Keep all changes within the current app architecture
+
+Deliverables:
+- Modified existing survey, not a new survey
+- Concern textarea added to final survey step
+- Existing submit flow extended to save concern text
+- Concern stored in backend after survey submission
+- Concern visible in the existing Concern tab
+- No mock data added
+
+At the end, provide:
+1. which existing files were modified
+2. which backend logic was updated
+3. whether any database/schema change was needed
+4. how the concern is linked to the survey submission
+5. how the Concern tab now receives and displays the new concern
