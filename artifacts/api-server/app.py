@@ -32,68 +32,86 @@ REM16_MAP = {
     "Proof-Eager-Rockstar": {
         "name": "The Champion Analyst",
         "description": "You champion change with evidence. You energetically communicate data-driven rationale and inspire others through logical arguments. Your role is to validate and promote the change with credibility.",
+        "thinkingWeights": {"Proof": 0.7, "Process": 0.15, "People": 0.05, "Possibilities": 0.1},
     },
     "Proof-Eager-Roadie": {
         "name": "The Quiet Validator",
         "description": "You support change by quietly gathering and sharing evidence behind the scenes. You build confidence in others through thorough research without seeking the spotlight yourself.",
+        "thinkingWeights": {"Proof": 0.65, "Process": 0.2, "People": 0.1, "Possibilities": 0.05},
     },
     "Proof-Cautious-Rockstar": {
         "name": "The Sceptic",
         "description": "You ask the hard questions publicly. You need solid evidence before committing, and your visible scrutiny ensures that the change is rigorous and well-founded. Others look to you to catch flaws.",
+        "thinkingWeights": {"Proof": 0.6, "Process": 0.2, "People": 0.05, "Possibilities": 0.15},
     },
     "Proof-Cautious-Roadie": {
         "name": "The Silent Doubter",
         "description": "You have reservations about the change but express them quietly through careful questioning in small groups. You need data and reassurance before you can fully commit to supporting the change.",
+        "thinkingWeights": {"Proof": 0.6, "Process": 0.15, "People": 0.15, "Possibilities": 0.1},
     },
     "Process-Eager-Rockstar": {
         "name": "The Systems Builder",
         "description": "You champion change through structure. You visibly lead the implementation of plans, processes, and governance frameworks, ensuring the change is delivered in an organised and reliable way.",
+        "thinkingWeights": {"Proof": 0.15, "Process": 0.7, "People": 0.05, "Possibilities": 0.1},
     },
     "Process-Eager-Roadie": {
         "name": "The Reliable Executor",
         "description": "You support change by diligently following and completing processes. You are the backbone of implementation — reliable, thorough, and consistent in delivering on your commitments.",
+        "thinkingWeights": {"Proof": 0.1, "Process": 0.7, "People": 0.1, "Possibilities": 0.1},
     },
     "Process-Cautious-Rockstar": {
         "name": "The Risk Manager",
         "description": "You are a visible advocate for careful, risk-aware change. You raise concerns about process gaps and implementation risks publicly, helping the team avoid costly mistakes.",
+        "thinkingWeights": {"Proof": 0.2, "Process": 0.6, "People": 0.1, "Possibilities": 0.1},
     },
     "Process-Cautious-Roadie": {
         "name": "The Resistant Follower",
         "description": "You follow instructions but have serious concerns about whether the change has been properly planned. You need clear processes and assurances before you can fully engage with the change.",
+        "thinkingWeights": {"Proof": 0.15, "Process": 0.6, "People": 0.15, "Possibilities": 0.1},
     },
     "People-Eager-Rockstar": {
         "name": "The Energiser",
         "description": "You bring emotional energy and enthusiasm to change. You visibly rally people, build morale, and create a sense of community and belonging around the change journey.",
+        "thinkingWeights": {"Proof": 0.05, "Process": 0.1, "People": 0.7, "Possibilities": 0.15},
     },
     "People-Eager-Roadie": {
         "name": "The Quiet Connector",
         "description": "You support change by nurturing relationships behind the scenes. You listen, support, and connect people informally, helping teams feel safe and supported through the transition.",
+        "thinkingWeights": {"Proof": 0.05, "Process": 0.1, "People": 0.7, "Possibilities": 0.15},
     },
     "People-Cautious-Rockstar": {
         "name": "The Protector",
         "description": "You visibly advocate for the wellbeing of your team during change. You are cautious about impacts on people and ensure that the human cost of change is recognised and addressed.",
+        "thinkingWeights": {"Proof": 0.1, "Process": 0.15, "People": 0.6, "Possibilities": 0.15},
     },
     "People-Cautious-Roadie": {
         "name": "The Concerned Observer",
         "description": "You are deeply worried about how the change will affect people, but you express these concerns quietly. You need reassurance that people's wellbeing is being looked after before you can engage.",
+        "thinkingWeights": {"Proof": 0.1, "Process": 0.15, "People": 0.65, "Possibilities": 0.1},
     },
     "Possibility-Eager-Rockstar": {
         "name": "The Creator",
         "description": "You are the visionary champion of change. You see exciting possibilities and actively promote a bold new future, inspiring others with your creativity and enthusiasm for what could be.",
+        "thinkingWeights": {"Proof": 0.05, "Process": 0.1, "People": 0.15, "Possibilities": 0.7},
     },
     "Possibility-Eager-Roadie": {
         "name": "The Dreamer",
         "description": "You are inspired by the possibilities of change and support it enthusiastically behind the scenes. You generate ideas and creative solutions, though you prefer others to take the visible lead.",
+        "thinkingWeights": {"Proof": 0.1, "Process": 0.05, "People": 0.15, "Possibilities": 0.7},
     },
     "Possibility-Cautious-Rockstar": {
         "name": "The Critic",
         "description": "You see the potential in change but are openly critical of how it is being executed. You challenge assumptions publicly and push for more creative and ambitious approaches to the change vision.",
+        "thinkingWeights": {"Proof": 0.15, "Process": 0.1, "People": 0.1, "Possibilities": 0.65},
     },
     "Possibility-Cautious-Roadie": {
         "name": "The Hesitant Innovator",
         "description": "You are drawn to the possibilities of change but hold back due to uncertainty or past disappointments. You need to see the vision articulated more clearly before you can fully commit your creative energy.",
+        "thinkingWeights": {"Proof": 0.15, "Process": 0.15, "People": 0.1, "Possibilities": 0.6},
     },
 }
+
+ALL_MODEL_NAMES = [v["name"] for v in REM16_MAP.values()]
 
 
 def get_mental_model(thinking_focus, orientation, change_role):
@@ -784,6 +802,52 @@ def dashboard_stats():
         })
     except Exception as e:
         print(f"Error fetching stats: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/dashboard/rm16-analytics", methods=["GET"])
+def rm16_analytics():
+    try:
+        surveys_result = supabase.table("surveys").select("*").execute()
+        all_surveys = surveys_result.data or []
+        total = len(all_surveys)
+
+        name_to_key = {v["name"]: k for k, v in REM16_MAP.items()}
+        model_counts = {v["name"]: 0 for v in REM16_MAP.values()}
+        for s in all_surveys:
+            mm = s.get("mental_model", "")
+            if mm in model_counts:
+                model_counts[mm] += 1
+
+        recognized_total = sum(model_counts.values())
+        model_distribution = []
+        for entry in REM16_MAP.values():
+            name = entry["name"]
+            count = model_counts.get(name, 0)
+            pct = round((count / recognized_total) * 100, 1) if recognized_total > 0 else 0.0
+            model_distribution.append({"model": name, "count": count, "percentage": pct})
+        model_distribution.sort(key=lambda x: -x["count"])
+
+        thinking_totals = {"Proof": 0.0, "Process": 0.0, "People": 0.0, "Possibilities": 0.0}
+        for s in all_surveys:
+            mm = s.get("mental_model", "")
+            key = name_to_key.get(mm)
+            if key and key in REM16_MAP:
+                weights = REM16_MAP[key].get("thinkingWeights", {})
+                for dim in thinking_totals:
+                    thinking_totals[dim] += weights.get(dim, 0)
+
+        if total > 0:
+            for dim in thinking_totals:
+                thinking_totals[dim] = round(thinking_totals[dim], 2)
+
+        return jsonify({
+            "totalRespondents": total,
+            "modelDistribution": model_distribution,
+            "thinkingStyles": thinking_totals,
+        })
+    except Exception as e:
+        print(f"Error fetching RM16 analytics: {e}")
         return jsonify({"error": str(e)}), 500
 
 

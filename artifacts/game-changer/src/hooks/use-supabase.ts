@@ -169,3 +169,10 @@ export function useGetDashboardStats() {
     queryFn: () => dashboardService.getStats(),
   });
 }
+
+export function useGetRm16Analytics() {
+  return useQuery({
+    queryKey: ["dashboard", "rm16-analytics"] as const,
+    queryFn: () => dashboardService.getRm16Analytics(),
+  });
+}

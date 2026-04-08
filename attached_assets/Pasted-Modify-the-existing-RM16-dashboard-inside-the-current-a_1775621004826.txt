@@ -1,0 +1,149 @@
+Modify the existing RM16 dashboard inside the current app. Do not build a new dashboard, a new standalone page, or a separate prototype. Work within the existing REM16 application structure and update the current dashboard components, layout, and backend logic in place.
+
+Tech requirements:
+- Use Python
+- Keep the existing app architecture
+- If the current app already uses Streamlit, continue using Streamlit
+- If there are existing Python modules, reuse them and extend them instead of replacing everything
+- Do not rebuild from scratch unless a file is clearly unusable
+- Keep current routing, navigation, styling direction, and existing app behavior intact
+
+Goal:
+Modify the existing dashboard so it visually matches the attached reference style:
+
+LEFT PANEL:
+- Title: "Mental Model Distribution"
+- Subtitle: "How your stakeholders approach change"
+- Show all RM16 mental models as a vertical ranked list
+- Each row should contain:
+  - model name
+  - thin horizontal distribution bar
+  - right-aligned badge showing count and percentage
+- The visual style should closely match the current screenshot reference
+- Keep it integrated into the existing dashboard card layout
+
+RIGHT PANEL:
+- Title: "Thinking Styles"
+- Subtitle: "What stakeholders focus on"
+- Show a radar/spider chart with these 4 axes:
+  - Proof
+  - Process
+  - People
+  - Possibilities
+- Under the radar chart, show a legend with coloured labels and totals:
+  - Blue = Proof
+  - Green = Process
+  - Red = People
+  - Yellow = Possibilities
+
+Important:
+- This is a modification task, not a rebuild
+- Reuse the existing REM16 dashboard and existing app structure
+- Preserve existing styling conventions where possible
+- Do not create a completely different UX
+- Upgrade the existing dashboard to support all RM16 models and real logic
+
+Data requirement:
+- Do not add mock data
+- Do not seed fake survey responses
+- Do not hardcode fake counts
+- Use the app’s current data source if one already exists
+- If survey data is not available yet, render the dashboard in an empty state with zero values and a friendly placeholder message
+- The dashboard must remain fully visible even when no data exists
+
+RM16 scope:
+Support all 16 RM16 mental models in the existing dashboard logic:
+1. Creator
+2. Explorer
+3. Fearful Optimist
+4. Lost Soul
+5. Implementer
+6. Perfectionist
+7. Bureaucrat
+8. Driver
+9. Sceptic
+10. Architect
+11. Guru
+12. Forecaster
+13. Facilitator
+14. Humanitarian
+15. Preservationist
+16. Shepherd
+
+Modification instructions:
+1. Inspect the existing app structure first
+   - identify the current dashboard file(s)
+   - identify the current RM16 model logic
+   - identify the current data-loading flow
+   - identify existing chart/rendering components
+   - modify only what is necessary
+
+2. Update the existing dashboard UI
+   - replace or improve the current mental model section so it shows all 16 RM16 models
+   - replace or improve the current thinking styles section so it uses the 4-axis radar chart
+   - keep the dashboard embedded in the current app shell/layout
+   - do not make a separate dashboard implementation
+
+3. Update the backend Python logic
+   - extend the existing RM16 logic to support all 16 models
+   - create or update a model metadata structure for all RM16 models
+   - create or update aggregation logic for:
+     - counts by model
+     - percentages by model
+     - totals for Proof / Process / People / Possibilities
+   - connect the UI directly to these computed outputs
+
+4. If the existing app already has model logic files, modify them instead of duplicating them
+   - do not create redundant versions like rm16_models_v2.py unless absolutely necessary
+   - prefer editing current files and only add new helper modules if there is no clean place for the logic
+
+Thinking Styles logic:
+Map RM16 model outputs into these four thinking-style totals:
+- Proof
+- Process
+- People
+- Possibilities
+
+Each RM16 model should have thinking-style weight contributions so the dashboard can aggregate these four dimensions from real classifications.
+
+UI behavior:
+- Show all 16 models even if their count is zero
+- Progress bars should scale based on the highest current count
+- Badge format should be like:
+  4 (11.1%)
+- If no responses exist:
+  - show 0 (0.0%) for every model
+  - show zero-safe radar chart
+  - show message:
+    "No survey data available yet. Connect survey results to populate this dashboard."
+
+Design requirements:
+- Match the screenshot style as closely as possible within the current app
+- White dashboard cards
+- Clean spacing
+- Thin progress bars
+- Compact professional typography
+- Executive-friendly look
+- Rounded corners and subtle borders/shadows if consistent with the existing app
+- Keep the existing app branding intact
+
+Implementation expectations:
+- Reuse existing files where possible
+- Clearly comment what was changed
+- Do not remove existing working features unless necessary
+- Ensure the dashboard still runs even when data is missing
+- Make changes production-friendly, not experimental
+
+Deliverables:
+- Modified existing dashboard, not a new one
+- Updated RM16 logic to support all 16 models
+- Updated aggregation logic for the dashboard
+- Existing app wired to the new calculations
+- Empty-state support without mock data
+
+At the end, provide:
+1. which existing files were modified
+2. which new files were added, if any
+3. how the current dashboard was updated
+4. how the RM16 logic now works
+5. where the real survey data plugs into the existing app

@@ -27,6 +27,12 @@ export type DashboardStats = {
   orientationDistribution: { orientation: string; count: number }[];
 };
 
+export type Rm16Analytics = {
+  totalRespondents: number;
+  modelDistribution: { model: string; count: number; percentage: number }[];
+  thinkingStyles: { Proof: number; Process: number; People: number; Possibilities: number };
+};
+
 export type FieldDocKey = "bcip" | "logic" | "strategy" | "comm_plan" | "impact";
 
 type CamelProject = {
@@ -71,6 +77,8 @@ type CamelSurvey = {
   mentalModelDescription: string;
   projectId: number | null;
   createdAt: string;
+  department?: string;
+  surveyFrequency?: string;
 };
 
 type CamelMessage = {
@@ -311,5 +319,8 @@ export const concernService = {
 export const dashboardService = {
   async getStats(): Promise<DashboardStats> {
     return apiFetch<DashboardStats>("/dashboard/stats");
+  },
+  async getRm16Analytics(): Promise<Rm16Analytics> {
+    return apiFetch<Rm16Analytics>("/dashboard/rm16-analytics");
   },
 };

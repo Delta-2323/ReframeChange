@@ -85,7 +85,7 @@ artifacts/
 
 ### Manager Dashboard
 - PIN-protected (password: `manager123`)
-- Overview with stats cards (surveys, projects, messages, approved, open concerns), mental model bar chart, focus area + orientation pie charts
+- Overview with stats cards (surveys, projects, messages, approved, open concerns), RM16 analytics panel (two-column: mental model distribution with progress bars + thinking styles radar chart)
 - Projects: 5 strategy components (BCIP Canvas, Change Logic, Change Strategy, Communication Plan, Stakeholder Impact) with text + PDF/Word upload + PDF text extraction; key dates (start, go-live, communication start, assessment end); activate/deactivate toggle
 - Survey responses table
 - AI message generation, review/edit/approve
@@ -143,6 +143,7 @@ PORT=8080 python3 artifacts/api-server/app.py
 | PUT | /api/messages/:id | Update message |
 | POST | /api/messages/:id/send-email | Send email |
 | GET | /api/dashboard/stats | Dashboard stats |
+| GET | /api/dashboard/rm16-analytics | RM16 model distribution + thinking styles |
 | POST | /api/dashboard/ai-summary | AI strategic summary |
 | POST | /api/concerns | Create concern |
 | GET | /api/concerns | List concerns |

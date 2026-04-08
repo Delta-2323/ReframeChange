@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import { 
   Users, Briefcase, FileText, CheckCircle, Plus, Edit, Send, Loader2, Sparkles, MessageSquare, LogOut,
   Brain, Lightbulb, AlertTriangle, TrendingUp, RefreshCw, ArrowRight, ChevronRight, Paperclip, Download, FileUp, Trash2,
@@ -13,7 +13,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { ManagerAuth } from "./ManagerAuth";
 import { useManagerAuth } from "@/hooks/use-manager-auth";
 import { 
-  useGetDashboardStats, useGetProjects, useGetSurveys, useGetMessages, useGetConcerns,
+  useGetDashboardStats, useGetRm16Analytics, useGetProjects, useGetSurveys, useGetMessages, useGetConcerns,
   useCreateProject, useUpdateProject, useToggleProjectStatus,
   useCreateConcern, useAssignConcernToSme, useSubmitManagerResponse, useResolveConcern,
   projectKeys, messageKeys, dashboardKeys, concernKeys
@@ -203,6 +203,137 @@ function AiSummaryCard() {
   );
 }
 
+function Rm16AnalyticsPanel() {
+  const { data: analytics, isLoading } = useGetRm16Analytics();
+
+  if (isLoading) {
+    return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  const dist = analytics?.modelDistribution ?? [];
+  const total = analytics?.totalRespondents ?? 0;
+  const styles = analytics?.thinkingStyles ?? { Proof: 0, Process: 0, People: 0, Possibilities: 0 };
+  const maxCount = dist.length > 0 ? Math.max(...dist.map(d => d.count), 1) : 1;
+
+  const MODEL_COLORS: Record<string, string> = {
+    "The Champion Analyst": "#3b82f6",
+    "The Quiet Validator": "#60a5fa",
+    "The Sceptic": "#2563eb",
+    "The Silent Doubter": "#93c5fd",
+    "The Systems Builder": "#22c55e",
+    "The Reliable Executor": "#4ade80",
+    "The Risk Manager": "#16a34a",
+    "The Resistant Follower": "#86efac",
+    "The Energiser": "#ef4444",
+    "The Quiet Connector": "#f87171",
+    "The Protector": "#dc2626",
+    "The Concerned Observer": "#fca5a5",
+    "The Creator": "#eab308",
+    "The Dreamer": "#facc15",
+    "The Critic": "#ca8a04",
+    "The Hesitant Innovator": "#fde047",
+  };
+
+  const STYLE_CONFIG = [
+    { key: "Proof" as const, label: "Proof", color: "#3b82f6" },
+    { key: "Process" as const, label: "Process", color: "#22c55e" },
+    { key: "People" as const, label: "People", color: "#ef4444" },
+    { key: "Possibilities" as const, label: "Possibilities", color: "#eab308" },
+  ];
+
+  const radarMax = Math.max(...Object.values(styles), 1);
+  const radarData = STYLE_CONFIG.map(s => ({
+    subject: s.label,
+    value: styles[s.key],
+    fullMark: radarMax,
+  }));
+
+  return (
+    <div className="grid md:grid-cols-5 gap-6">
+      <Card className="md:col-span-3 shadow-sm border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Mental Model Distribution</CardTitle>
+          <CardDescription>How your stakeholders approach change</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {total === 0 && (
+            <div className="text-center py-4 mb-4 bg-muted/30 rounded-lg">
+              <p className="text-sm text-muted-foreground">No survey data available yet. Connect survey results to populate this dashboard.</p>
+            </div>
+          )}
+          <div className="space-y-2">
+            {dist.map((item) => (
+              <div key={item.model} className="flex items-center gap-3">
+                <span className="text-xs font-medium text-foreground w-[140px] truncate shrink-0" title={item.model}>
+                  {item.model}
+                </span>
+                <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${total > 0 ? (item.count / maxCount) * 100 : 0}%`,
+                      backgroundColor: MODEL_COLORS[item.model] || "#64748b",
+                      minWidth: item.count > 0 ? "4px" : "0px",
+                    }}
+                  />
+                </div>
+                <span className="text-xs font-mono text-muted-foreground w-[70px] text-right shrink-0">
+                  {item.count} ({item.percentage.toFixed(1)}%)
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="md:col-span-2 shadow-sm border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Thinking Styles</CardTitle>
+          <CardDescription>What stakeholders focus on</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+                <PolarGrid stroke="#e2e8f0" />
+                <PolarAngleAxis
+                  dataKey="subject"
+                  tick={{ fontSize: 13, fontWeight: 600, fill: "#475569" }}
+                />
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, radarMax]}
+                  tick={false}
+                  axisLine={false}
+                />
+                <Radar
+                  dataKey="value"
+                  stroke="#6366f1"
+                  fill="#6366f1"
+                  fillOpacity={0.2}
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: "#6366f1" }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            {STYLE_CONFIG.map(s => (
+              <div key={s.key} className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                <span className="text-xs font-medium text-foreground">{s.label}</span>
+                <span className="text-xs font-mono text-muted-foreground ml-auto">
+                  {styles[s.key].toFixed(1)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function OverviewTab() {
   const { data: stats, isLoading } = useGetDashboardStats();
   const [, setLocation] = useLocation();
@@ -210,17 +341,6 @@ function OverviewTab() {
   if (isLoading || !stats) {
     return <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
-
-  const chartData = stats.mentalModelDistribution.map(d => ({
-    name: d.mentalModel,
-    count: d.count
-  }));
-
-  const focusPieData = stats.focusAreaDistribution.map((d: { area?: string; focusArea?: string; count: number }) => ({ name: d.area || d.focusArea || "Unknown", value: d.count }));
-  const orientPieData = stats.orientationDistribution.map(d => ({ name: d.orientation, value: d.count }));
-
-  const COLORS = ['#0f172a', '#1e293b', '#334155', '#475569', '#14b8a6', '#0d9488', '#0f766e'];
-  const PIE_COLORS = ['#0f172a', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -275,82 +395,7 @@ function OverviewTab() {
 
       <AiSummaryCard />
 
-      <Card className="shadow-sm border-border/50">
-        <CardHeader>
-          <CardTitle>Mental Model Distribution</CardTitle>
-          <CardDescription>Breakdown of stakeholder mental models across all surveys</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis 
-                  dataKey="name" 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={80} 
-                  interval={0} 
-                  tick={{ fontSize: 12, fill: '#64748b' }} 
-                />
-                <YAxis allowDecimals={false} tick={{ fill: '#64748b' }} />
-                <RechartsTooltip 
-                  cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {chartData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {(focusPieData.length > 0 || orientPieData.length > 0) && (
-        <div className="grid md:grid-cols-2 gap-6">
-          {focusPieData.length > 0 && (
-            <Card className="shadow-sm border-border/50">
-              <CardHeader>
-                <CardTitle className="text-base">Thinking Focus Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={focusPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                        {focusPieData.map((_e, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                      </Pie>
-                      <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          {orientPieData.length > 0 && (
-            <Card className="shadow-sm border-border/50">
-              <CardHeader>
-                <CardTitle className="text-base">Orientation Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={orientPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                        {orientPieData.map((_e, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                      </Pie>
-                      <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
+      <Rm16AnalyticsPanel />
     </div>
   );
 }
