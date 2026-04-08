@@ -11,6 +11,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -58,6 +59,7 @@ const surveySchema = z.object({
     required_error: "Please select a frequency preference",
   }),
   projectId: z.number().optional().nullable(),
+  concernText: z.string().optional().default(""),
 });
 
 type SurveyFormValues = z.infer<typeof surveySchema>;
@@ -525,6 +527,22 @@ export default function SurveyForm() {
                       {form.formState.errors.surveyFrequency.message}
                     </p>
                   )}
+
+                  <div className="pt-6 border-t space-y-3">
+                    <Label htmlFor="concernText" className="text-base font-semibold text-foreground">
+                      Do you have any concerns you would like to share?
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Optional — share any risks, blockers, or feedback about the change.
+                    </p>
+                    <Textarea
+                      id="concernText"
+                      rows={4}
+                      placeholder="Enter any concerns, risks, blockers, or feedback here..."
+                      {...form.register("concernText")}
+                      className="resize-none rounded-xl border-2 focus:border-primary"
+                    />
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

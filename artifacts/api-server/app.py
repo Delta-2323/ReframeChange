@@ -541,6 +541,21 @@ def submit_survey():
             else:
                 raise insert_err
         survey = result.data[0] if result.data else None
+
+        concern_text = (body.get("concernText") or "").strip()
+        if concern_text and survey:
+            try:
+                concern_row = {
+                    "survey_id": survey.get("id"),
+                    "project_id": body.get("projectId"),
+                    "stakeholder_name": body.get("stakeholderName"),
+                    "concern_text": concern_text,
+                    "status": "open",
+                }
+                supabase.table("concerns").insert(concern_row).execute()
+            except Exception as concern_err:
+                print(f"Warning: survey saved but concern creation failed: {concern_err}")
+
         return jsonify(survey_to_camel(survey)), 201
     except Exception as e:
         print(f"Error submitting survey: {e}")

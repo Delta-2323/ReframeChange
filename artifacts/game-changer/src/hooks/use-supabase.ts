@@ -46,10 +46,13 @@ export function useSubmitSurvey() {
       stakeholderName: string;
       stakeholderEmail: string;
       role: string;
+      department?: string;
       thinkingFocus: string;
       orientation: string;
       changeRole: string;
+      surveyFrequency?: string;
       projectId?: number | null;
+      concernText?: string;
     }) => surveyService.submit(data),
   });
 }
