@@ -128,7 +128,6 @@ LEGACY_NAME_MAP = {
     "The Hesitant Innovator": "The Lost Soul",
 }
 
-ALL_MODEL_NAMES = [v["name"] for v in REM16_MAP.values()]
 
 
 def get_mental_model(thinking_focus, orientation, change_role):
