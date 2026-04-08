@@ -1,0 +1,216 @@
+Build this dashboard in Python, not React.
+
+Framework:
+- Use Python with Streamlit
+- Use Plotly for charts
+- Use Pandas for data processing
+- Structure the code cleanly so the RM16 logic is separate from the UI
+- Do not use mock data
+- Do not hardcode fake counts
+- The dashboard must load real data later from CSV, database, or API, but for now it should render with empty-state placeholders when no data exists
+
+Goal:
+Create a professional change-management dashboard that visually matches this layout:
+
+LEFT SIDE:
+- A card titled "Mental Model Distribution"
+- Subtitle: "How your stakeholders approach change"
+- Show all RM16 models as a vertical list
+- Each row should include:
+  - model name
+  - a thin horizontal progress bar
+  - count and percentage badge aligned to the right
+- Styling should be clean, executive-friendly, and close to the screenshot
+
+RIGHT SIDE:
+- A card titled "Thinking Styles"
+- Subtitle: "What stakeholders focus on"
+- Show a radar/spider chart with these 4 axes:
+  - Proof
+  - Process
+  - People
+  - Possibilities
+- Below the chart show a legend with colored badges and totals:
+  - Blue = Proof
+  - Green = Process
+  - Red = People
+  - Yellow = Possibilities
+
+Important:
+- Use real RM16 logic
+- No mock values
+- If no dataset is loaded yet, show:
+  - zero values
+  - empty progress bars
+  - radar chart with zero-safe defaults
+  - a friendly message such as "No survey data available yet"
+
+RM16 requirements:
+Support ALL 16 models exactly:
+1. Creator
+2. Explorer
+3. Fearful Optimist
+4. Lost Soul
+5. Implementer
+6. Perfectionist
+7. Bureaucrat
+8. Driver
+9. Sceptic
+10. Architect
+11. Guru
+12. Forecaster
+13. Facilitator
+14. Humanitarian
+15. Preservationist
+16. Shepherd
+
+Create a Python module for RM16 metadata with fields like:
+- id
+- name
+- colour_group
+- energy_state
+- role_style
+- summary
+- strengths
+- key_questions
+- motivations
+- preferred_engagement
+- recommended_phases
+- top_tip
+- thinking_style_weights
+
+Thinking style weights:
+Each model should map to one or more of the 4 thinking styles:
+- Proof
+- Process
+- People
+- Possibilities
+
+Build a proper RM16 backend logic module:
+- survey scoring logic
+- model classification logic
+- aggregation logic for dashboard summaries
+
+Implement these Python files:
+- app.py
+- rm16_models.py
+- rm16_classifier.py
+- dashboard_utils.py
+- data_loader.py
+
+Detailed coding instructions:
+
+1. app.py
+- Main Streamlit app
+- Wide page layout
+- Header and dashboard container cards
+- Two-column layout matching the screenshot
+- Left column wider than right column
+- Load data through data_loader.py
+- Call classification and aggregation functions
+- Render empty states when no data exists
+
+2. rm16_models.py
+- Store all 16 RM16 model definitions
+- Use dictionaries or dataclasses
+- Include a mapping of each model to thinking style weights
+- Example thinking_style_weights:
+  {
+    "proof": 0.8,
+    "process": 0.6,
+    "people": 0.3,
+    "possibilities": 0.7
+  }
+
+3. rm16_classifier.py
+- Create functions to:
+  - score survey responses
+  - classify respondent into one primary RM16 model
+  - compute top matches
+  - derive dominant thinking style contributions
+- Make functions reusable even if the survey structure changes later
+
+4. dashboard_utils.py
+- Functions to aggregate:
+  - count by model
+  - percentage by model
+  - total respondents
+  - totals for Proof / Process / People / Possibilities
+- Return structures that are easy for Plotly and Streamlit to render
+
+5. data_loader.py
+- Load data from:
+  - CSV if provided
+  - otherwise return an empty dataframe with the expected columns
+- Do not create fake records
+- Include clear TODO comments for future DB or API integration
+
+UI and styling requirements:
+- Match the screenshot style as closely as possible
+- Use white cards with rounded corners
+- Light grey borders or shadows
+- Progress bars should be thin and modern
+- Right-aligned badges for counts and percentages
+- Use compact professional typography
+- Keep spacing neat and dashboard-like
+- Make the radar chart centered in the card
+- Add a legend under the radar chart with colored labels and aligned values
+
+Color guidance:
+- Proof = blue
+- Process = green
+- People = red
+- Possibilities = yellow
+- Use muted professional tones, not overly bright colors
+
+Mental Model Distribution details:
+- Show all 16 models in a fixed order
+- Each row:
+  - label on left
+  - horizontal bar below or aligned with label
+  - right-side badge with count and percentage, such as "4 (11.1%)"
+- Bars should scale relative to the highest count
+- If total respondents = 0, show 0 (0.0%) for all
+
+Thinking Styles details:
+- Use a Plotly radar chart
+- The four axes should always appear even with no data
+- Normalize or scale totals cleanly
+- Add legend rows below the chart:
+  - badge color
+  - label
+  - numeric total aligned right
+
+Empty state requirements:
+When no survey data exists:
+- Keep full dashboard layout visible
+- Show all 16 models with zero counts
+- Show radar chart with zeros
+- Show a subtle info message:
+  "No survey data available yet. Connect survey results to populate this dashboard."
+- Do not crash
+- Do not hide sections
+
+Architecture requirements:
+- Keep business logic separate from UI
+- Use functions and typed structures where possible
+- Write clear comments
+- Make it easy later to swap Streamlit for Dash or Flask if needed
+
+Future-readiness:
+Add placeholders or TODOs for:
+- filtering by date
+- filtering by business unit
+- filtering by project/change initiative
+- database connection
+- exporting dashboard summaries
+
+Deliverable:
+Generate complete Python code for all files above.
+
+At the end, explain:
+1. how the dashboard loads data
+2. how the RM16 logic is structured
+3. how the model distribution is calculated
+4. how the radar chart values are calculated
+5. where to plug in the real survey dataset later
